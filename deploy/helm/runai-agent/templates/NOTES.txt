@@ -1,0 +1,116 @@
+🎉 Run:AI Agent has been deployed successfully!
+
+{{- if .Values.monitoring.enabled }}
+✅ Monitoring sidecar is ENABLED - continuous failure analysis active
+{{- else }}
+ℹ️  Monitoring sidecar is DISABLED - enable with: --set monitoring.enabled=true
+{{- end }}
+
+📋 Deployment Details:
+  • Release Name: {{ .Release.Name }}
+  • Namespace: {{ include "runai-agent.namespace" . }}
+  • Deployment: {{ include "runai-agent.fullname" . }}
+
+🔧 Components:
+  • Main Agent: Chat interface + API
+  {{- if .Values.monitoring.enabled }}
+  • Monitoring Sidecar: Polling every {{ .Values.monitoring.pollInterval }}s
+  {{- end }}
+  {{- if .Values.failureAnalysis.persistence.enabled }}
+  • Failure Database: {{ include "runai-agent.pvcName" . }} ({{ .Values.failureAnalysis.persistence.size }})
+  {{- end }}
+
+🚀 Access the Agent:
+
+1. Check pod status:
+   kubectl get pods -n {{ include "runai-agent.namespace" . }} -l app.kubernetes.io/name={{ include "runai-agent.name" . }}
+
+{{- if .Values.monitoring.enabled }}
+   Expected: 2/2 containers running (agent + sidecar)
+{{- else }}
+   Expected: 1/1 container running
+{{- end }}
+
+2. View logs:
+   # Get pod name
+   POD_NAME=$(kubectl get pods -n {{ include "runai-agent.namespace" . }} -l app.kubernetes.io/name={{ include "runai-agent.name" . }} -o jsonpath='{.items[0].metadata.name}')
+   
+   # Main agent logs
+   kubectl logs -n {{ include "runai-agent.namespace" . }} $POD_NAME -c nat-agent -f
+
+{{- if .Values.monitoring.enabled }}
+   # Monitoring sidecar logs
+   kubectl logs -n {{ include "runai-agent.namespace" . }} $POD_NAME -c monitor-sidecar -f
+{{- end }}
+
+3. Access the UI:
+   # Port-forward for local access
+   kubectl port-forward -n {{ include "runai-agent.namespace" . }} deployment/{{ include "runai-agent.fullname" . }} 3000:3000
+
+   Then open: http://localhost:3000
+
+   {{- if .Values.ingress.enabled }}
+   # Or access via Ingress at: {{ (index .Values.ingress.hosts 0).host }}
+   {{- end }}
+
+📊 Test the Failure Analysis:
+
+Once the agent is running, try these queries in the chat:
+
+  • "Show me failure statistics"
+  • "Analyze failures from the last 7 days"
+  • "How do I fix OOMKilled failures?"
+{{- if .Values.monitoring.enabled }}
+  • "What's the monitoring status?"
+{{- end }}
+
+{{- if .Values.failureAnalysis.persistence.enabled }}
+
+💾 Database Location:
+
+The failure history database is stored at:
+  {{ .Values.failureAnalysis.database.path }}
+
+To inspect the database directly:
+  POD_NAME=$(kubectl get pods -n {{ include "runai-agent.namespace" . }} -l app.kubernetes.io/name={{ include "runai-agent.name" . }} -o jsonpath='{.items[0].metadata.name}')
+  kubectl exec -it -n {{ include "runai-agent.namespace" . }} $POD_NAME -c nat-agent -- sqlite3 {{ .Values.failureAnalysis.database.path }}
+
+{{- end }}
+
+🔧 Configuration:
+
+To customize the deployment:
+  helm upgrade {{ .Release.Name }} ./deploy/helm/runai-agent \
+    --set runai.clientId="your-id" \
+    --set runai.clientSecret="your-secret" \
+    --set runai.baseUrl="https://your-cluster.run.ai" \
+    --set nvidia.apiKey="your-api-key"
+
+📚 Documentation:
+
+  • Quick Start: docs/QUICKSTART.md
+  • Deployment Guide: docs/DEPLOYMENT.md
+  • Sidecar Setup: docs/SIDECAR_DEPLOYMENT.md
+  • Failure Analysis: docs/FAILURE_ANALYSIS.md
+
+🐛 Troubleshooting:
+
+If the pod is not starting:
+  kubectl describe pod -n {{ include "runai-agent.namespace" . }} -l app.kubernetes.io/name={{ include "runai-agent.name" . }}
+  kubectl logs -n {{ include "runai-agent.namespace" . }} deployment/{{ include "runai-agent.fullname" . }} -c nat-agent
+
+{{- if .Values.monitoring.enabled }}
+If sidecar is not working:
+  kubectl logs -n {{ include "runai-agent.namespace" . }} deployment/{{ include "runai-agent.fullname" . }} -c monitor-sidecar
+{{- end }}
+
+{{- if and .Values.failureAnalysis.persistence.enabled (not .Values.failureAnalysis.persistence.existingClaim) }}
+If PVC is pending:
+  kubectl describe pvc {{ include "runai-agent.pvcName" . }} -n {{ include "runai-agent.namespace" . }}
+  # Check available storage classes
+  kubectl get storageclass
+{{- end }}
+
+---
+Built with ❤️ using NVIDIA NeMo Agent Toolkit
+

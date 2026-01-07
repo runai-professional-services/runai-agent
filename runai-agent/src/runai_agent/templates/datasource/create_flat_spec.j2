@@ -1,0 +1,46 @@
+{# Flat spec datasource template - NFS, Git, S3, HostPath, ConfigMap, Secret #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+{% include '_base/project_lookup.j2' %}
+
+# Step 3: Create {{ resource_type.upper() }} datasource
+payload = {
+    "meta": {
+        "name": "{{ name }}",
+        "scope": "project",
+        "projectId": project_id,
+        "clusterId": cluster_id
+    },
+    "spec": {
+        {% if resource_type == 'nfs' %}
+        "server": "{{ server }}",
+        "path": "{{ path }}"
+        {% elif resource_type == 'git' %}
+        "repository": "{{ repository }}",
+        "branch": "{{ branch }}"{% if path %},
+        "path": "{{ path }}"{% endif %}
+        {% elif resource_type == 's3' %}
+        "bucket": "{{ bucket }}",
+        "url": "{{ endpoint }}",
+        "path": "/container/{{ bucket }}"
+        {% elif resource_type == 'hostpath' or resource_type == 'host-path' %}
+        "path": "{{ path }}"
+        {% elif resource_type == 'configmap' %}
+        "name": "{{ config_name | default(name) }}"
+        {% elif resource_type == 'secret' %}
+        "name": "{{ secret_name | default(name) }}"
+        {% endif %}
+    }
+}
+
+response = requests.post(
+    f"{base_url}/api/v1/asset/datasource/{{ resource_type }}",
+    headers=headers,
+    json=payload,
+    verify=True
+)
+response.raise_for_status()
+result = response.json() if response.text else {"status": "success", "code": response.status_code}
+

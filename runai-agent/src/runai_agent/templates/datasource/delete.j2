@@ -1,0 +1,42 @@
+{# Delete datasource template #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+{% include '_base/project_lookup.j2' %}
+
+# Step 3: Find datasource by name
+list_response = requests.get(
+    f"{base_url}/api/v1/asset/datasource/{{ resource_type }}",
+    headers=headers,
+    params={"projectId": project_id},
+    verify=True
+)
+list_response.raise_for_status()
+datasources = list_response.json()
+
+# Find the datasource by name
+datasource_obj = None
+if isinstance(datasources, list):
+    datasource_obj = next((ds for ds in datasources if ds.get("meta", {}).get("name") == "{{ name }}"), None)
+elif isinstance(datasources, dict) and "items" in datasources:
+    datasource_obj = next((ds for ds in datasources["items"] if ds.get("meta", {}).get("name") == "{{ name }}"), None)
+elif isinstance(datasources, dict) and "entries" in datasources:
+    datasource_obj = next((ds for ds in datasources["entries"] if ds.get("meta", {}).get("name") == "{{ name }}"), None)
+
+if not datasource_obj:
+    raise ValueError(f"{{ resource_type.upper() }} datasource '{{ name }}' not found in project '{{ project }}'")
+
+datasource_id = datasource_obj.get("meta", {}).get("id") or datasource_obj.get("meta", {}).get("uuid") or datasource_obj.get("id") or datasource_obj.get("uuid")
+if not datasource_id:
+    raise ValueError(f"Could not find ID for datasource '{{ name }}'")
+
+# Step 4: Delete datasource by ID
+response = requests.delete(
+    f"{base_url}/api/v1/asset/datasource/{{ resource_type }}/{datasource_id}",
+    headers=headers,
+    verify=True
+)
+response.raise_for_status()
+result = {"status": "deleted", "datasource": "{{ name }}", "type": "{{ resource_type }}", "code": response.status_code}
+

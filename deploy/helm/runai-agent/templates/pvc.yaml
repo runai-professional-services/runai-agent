@@ -1,0 +1,20 @@
+{{- if and .Values.failureAnalysis.persistence.enabled (not .Values.failureAnalysis.persistence.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "runai-agent.pvcName" . }}
+  namespace: {{ include "runai-agent.namespace" . }}
+  labels:
+    {{- include "runai-agent.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.failureAnalysis.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.failureAnalysis.persistence.size }}
+  {{- if .Values.failureAnalysis.persistence.storageClassName }}
+  storageClassName: {{ .Values.failureAnalysis.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
+

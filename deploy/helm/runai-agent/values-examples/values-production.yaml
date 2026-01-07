@@ -1,0 +1,81 @@
+# Production deployment with all features enabled
+# Good for: Production clusters, full monitoring, long-term failure tracking
+
+global:
+  namespace: "runai-agent-prod"
+  deploymentName: "runai-agent-prod"
+
+image:
+  repository: my-registry.io/nat-agent-ui
+  tag: "v0.1.27"
+  pullPolicy: IfNotPresent
+
+# Use existing secrets for security
+runai:
+  existingSecret: "runai-creds-prod"
+
+nvidia:
+  existingSecret: "nvidia-key-prod"
+
+kubeconfig:
+  existingSecret: "kubeconfig-prod"
+  key: "config"
+
+# Enable monitoring with frequent polling
+monitoring:
+  enabled: true
+  pollInterval: 30  # Check every 30 seconds
+  slackWebhookUrl: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+# Enable persistent failure database
+failureAnalysis:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: "gp3"  # Use your storage class (EBS, EFS, NFS, etc.)
+    accessModes:
+      - ReadWriteOnce  # RWO is fine - both containers are in same pod
+  database:
+    path: "/data/runai_failure_history.db"
+    lookbackDays: 30
+    patternThreshold: 3
+    enableAutoRemediation: true
+
+# Production resources
+resources:
+  requests:
+    cpu: "4"
+    memory: "8Gi"
+    gpu: 0
+  limits:
+    cpu: "8"
+    memory: "16Gi"
+
+# RBAC for kubectl access
+rbac:
+  create: true
+  serviceAccountName: "default"
+
+# Node selection for control plane
+nodeSelector:
+  workload-type: "services"
+
+# Tolerate control plane taints
+tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+# Pod annotations for monitoring
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+

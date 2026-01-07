@@ -1,0 +1,16 @@
+{
+  "name": "example-job",
+  "project": "project-01",
+  "image": "nvcr.io/nvidia/pytorch:24.01-py3",
+  "gpu": 2,
+  "cpuCores": 8,
+  "memory": "32Gi",
+  "command": "python",
+  "args": ["train.py", "--epochs", "100", "--batch-size", "64"],
+  "environmentVariables": {
+    "NCCL_DEBUG": "INFO",
+    "OMP_NUM_THREADS": "8"
+  }
+}
+
+

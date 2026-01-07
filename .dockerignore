@@ -1,0 +1,76 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Node
+**/node_modules
+**/npm-debug.log
+**/.npm
+**/.next
+**/out
+**/.nuxt
+**/dist
+**/.cache
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+**/.venv
+**/venv
+**/ENV
+**/env
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+**/build
+**/dist
+**/*.egg-info
+
+# Logs
+**/*.log
+**/logs
+
+# Testing
+**/coverage
+**/.pytest_cache
+**/test_data
+
+# Documentation
+**/*.md
+!README.md
+docs/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Large directories that shouldn't be in context
+nemo-agent-toolkit/.venv
+nemo-agent-toolkit/build
+nemo-agent-toolkit/runapy_chromadb
+apps/runai-agent-test-frontend/venv
+apps/runai-agent-test-frontend/.next
+apps/runai-agent-test-frontend/node_modules
+
+# Keep only what we need
+# The Dockerfile will COPY specific files as needed
+

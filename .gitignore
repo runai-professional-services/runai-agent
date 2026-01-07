@@ -1,0 +1,58 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cursor AI development documentation (private)
+.cursorrules
+docs/CURSOR_*.md
+# Environment variables (may contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# ChromaDB
+**/chroma.sqlite3
+**/runapy_chromadb/
+
+# Docker
+docker-compose.override.yml
+
+# NeMo Agent Toolkit (installed as dependency, not versioned)
+nemo-agent-toolkit/
+
+runai-agent/uv.lock

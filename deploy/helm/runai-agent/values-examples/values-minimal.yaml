@@ -1,0 +1,41 @@
+# Minimal deployment without monitoring or persistence
+# Good for: Development, testing, resource-constrained environments
+
+global:
+  namespace: "runai-agent-dev"
+  deploymentName: "runai-agent-dev"
+
+image:
+  repository: your-registry/nat-agent-ui
+  tag: latest
+  pullPolicy: Always
+
+# Use existing secrets (recommended)
+runai:
+  existingSecret: "runai-creds"
+
+nvidia:
+  existingSecret: "nvidia-key"
+
+# Disable monitoring sidecar
+monitoring:
+  enabled: false
+
+# Disable persistence (in-memory only)
+failureAnalysis:
+  persistence:
+    enabled: false
+
+# Minimal resources
+resources:
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+    gpu: 0
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+
+rbac:
+  create: true
+

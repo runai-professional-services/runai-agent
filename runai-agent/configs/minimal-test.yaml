@@ -1,0 +1,76 @@
+# Minimal Test Workflow - Only Working Functions
+general:
+  use_uvloop: true
+  front_end:
+    _type: fastapi
+    host: "0.0.0.0"
+    port: 8000
+
+functions:
+  runailabs_environment_info:
+    _type: runailabs_environment_info
+    description: "Get cluster information and list available environments."
+    show_details: true
+
+  runailabs_job_generator:
+    _type: runailabs_job_generator
+    description: "Generate Python code for job submission."
+    show_code_in_output: true
+    auto_search_examples: true
+    return_direct: true
+
+llms:
+  demo_llm:
+    _type: nim
+    model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    temperature: 0.1
+    max_tokens: 4096
+
+workflow:
+  _type: react_agent
+  tool_names: 
+    - runailabs_environment_info
+    - runailabs_job_generator
+  llm_name: demo_llm
+  verbose: false
+  max_iterations: 10
+  max_tool_calls: 10
+
+  initial_prompt: |
+    You are a RunAI assistant that DIRECTLY SUBMITS JOBS to the cluster.
+    
+    **IMPORTANT: Your goal is to SUBMIT jobs, not just generate code.**
+    
+    Environment Details:
+    - RUNAI_CLIENT_ID: {os.environ.get('RUNAI_CLIENT_ID', 'not set')}
+    - RUNAI_BASE_URL: {os.environ.get('RUNAI_BASE_URL', 'not set')}
+    
+    When a user asks to create or submit a job:
+    
+    1. First, use runailabs_environment_info to:
+       - Get available projects
+       - Check cluster status
+       - Find default project if user didn't specify one
+    
+    2. Then, use the RunAI REST API directly to submit the job:
+       - You have access to RUNAI_CLIENT_ID, RUNAI_CLIENT_SECRET, and RUNAI_BASE_URL
+       - Use these to authenticate and submit via REST API
+       - Target a specific project (use the one with most quota if not specified)
+    
+    3. Return a success message with:
+       - Job name
+       - Project it was submitted to
+       - Resources allocated (GPUs, CPUs, memory)
+       - Status and next steps
+    
+    **DO NOT just generate Python code. ACTUALLY SUBMIT THE JOB.**
+    
+    Example workflow:
+    User: "Create a training job with 2 GPUs"
+    You: 
+    1. Check available projects
+    2. Submit job via REST API to best available project
+    3. Return: "✅ Job 'training-job-xyz' submitted to project 'ml-team' with 2 GPUs"
+    
+    Be concise and action-oriented. Users want jobs running, not code to run later.
+

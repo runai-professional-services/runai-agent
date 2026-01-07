@@ -1,0 +1,53 @@
+{# Universal DELETE template - works for any resource type #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+# Step 2: Delete {{ resource_type }} by ID or name
+{% if resource_id %}
+# Delete by ID
+response = requests.delete(
+    f"{base_url}/api/v1/{{ category }}/{{ resource_type }}/{{ resource_id }}",
+    headers=headers,
+    verify=True
+)
+{% else %}
+# Need to lookup ID first by name
+list_response = requests.get(
+    f"{base_url}/api/v1/{{ category }}/{{ resource_type }}",
+    headers=headers,
+    verify=True
+)
+list_response.raise_for_status()
+items = list_response.json()
+
+# Find the resource by name
+resource_obj = None
+if isinstance(items, list):
+    resource_obj = next((item for item in items if item.get("name") == "{{ resource_name }}"), None)
+elif isinstance(items, dict):
+    # Try common list keys
+    for key in ['items', 'data', '{{ resource_type }}s', '{{ resource_type }}']:
+        if key in items and isinstance(items[key], list):
+            resource_obj = next((item for item in items[key] if item.get("name") == "{{ resource_name }}"), None)
+            if resource_obj:
+                break
+
+if not resource_obj:
+    raise ValueError(f"{{ resource_type | title }} '{{ resource_name }}' not found")
+
+resource_id = resource_obj.get("id") or resource_obj.get("uuid")
+if not resource_id:
+    raise ValueError(f"Could not find ID for {{ resource_type }} '{{ resource_name }}'")
+
+# Delete by resolved ID
+response = requests.delete(
+    f"{base_url}/api/v1/{{ category }}/{{ resource_type }}/{resource_id}",
+    headers=headers,
+    verify=True
+)
+{% endif %}
+
+response.raise_for_status()
+result = {"status": "deleted", "resource": "{{ resource_name }}", "code": response.status_code}
+

@@ -1,0 +1,88 @@
+---
+# Run:AI Agent with Monitoring Sidecar
+# This deploys the NAT agent with a sidecar container for continuous monitoring
+apiVersion: run.ai/v2alpha1
+kind: InteractiveWorkload
+metadata:
+  name: ${RUNAI_JOB_NAME}
+  namespace: runai-${RUNAI_PROJECT}
+spec:
+  # Main agent container (chat interface)
+  image:
+    value: your-registry/nat-agent-ui:latest
+  
+  # Environment variables for main container
+  environmentVariables:
+    items:
+      - name: NVIDIA_API_KEY
+        value: ${NVIDIA_API_KEY}
+      - name: RUNAI_CLIENT_ID
+        value: ${RUNAI_CLIENT_ID}
+      - name: RUNAI_CLIENT_SECRET
+        value: ${RUNAI_CLIENT_SECRET}
+      - name: RUNAI_BASE_URL
+        value: ${RUNAI_BASE_URL}
+      - name: RUNAI_FAILURE_DB_PATH
+        value: /data/runai_failure_history.db
+  
+  # Expose UI on port 3000
+  exposedUrls:
+    - toolType: custom
+      toolName: agent-ui
+      container: nat-agent
+      port: 3000
+  
+  # Resource requests (adjust as needed)
+  compute:
+    gpuDevicesRequest: 0
+    cpuCoreRequest: 2
+    cpuMemoryRequest: 4Gi
+  
+  # Volume mounts for main container
+  volumes:
+    items:
+      - name: failure-db
+        persistentVolumeClaim:
+          claimName: failure-analysis-pvc
+        containers:
+          items:
+            - nat-agent
+        path:
+          value: /data
+  
+  # Additional containers (sidecar)
+  additionalContainers:
+    items:
+      - name: monitor-sidecar
+        image: your-registry/nat-agent-ui:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            set -e
+            cd /app/runai-agent
+            source .venv/bin/activate
+            echo "Starting monitoring sidecar..."
+            python scripts/monitor_sidecar.py --poll-interval 60
+        env:
+          - name: RUNAI_CLIENT_ID
+            value: ${RUNAI_CLIENT_ID}
+          - name: RUNAI_CLIENT_SECRET
+            value: ${RUNAI_CLIENT_SECRET}
+          - name: RUNAI_BASE_URL
+            value: ${RUNAI_BASE_URL}
+          - name: RUNAI_FAILURE_DB_PATH
+            value: /data/runai_failure_history.db
+          - name: NVIDIA_API_KEY
+            value: ${NVIDIA_API_KEY}
+        volumeMounts:
+          - name: failure-db
+            mountPath: /data
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+

@@ -1,0 +1,88 @@
+general:
+  use_uvloop: true
+  logging:
+    console:
+      _type: console
+      level: INFO
+  front_end:
+    _type: console
+
+functions:
+  runailabs_job_generator:
+    _type: runailabs_job_generator
+    description: "Generate RunaiLabs job submission code for all workload types"
+
+  runailabs_environment_info:
+    _type: runailabs_environment_info
+    description: "Show RunaiLabs environment details"
+    show_details: true
+
+  runapy_code_search:
+    _type: runapy_code_search
+    description: "Semantic search over the runapy codebase"
+    collection_name: "runapy_functions"
+    persist_directory: "./runapy_chromadb"
+
+  runapy_repo_indexer:
+    _type: runapy_repo_indexer
+    description: "Index runapy repository for semantic search"
+    repo_url: "https://github.com/runai-professional-services/runapy"
+    branch: "main"
+
+  runapy_code_analyzer:
+    _type: runapy_code_analyzer
+    description: "Analyze runapy code patterns"
+    analysis_depth: "intermediate"
+
+  runapy_code_generator:
+    _type: runapy_code_generator
+    description: "Generate optimized Python code for Runapy SDK endpoints"
+    # target_endpoint: null      # (optionally include or comment out as default)
+
+llms:
+  runailabs_specialist:
+    _type: nim
+    model_name: meta/llama-3.1-70b-instruct
+    temperature: 0.1
+    max_tokens: 4096  # Increased to accommodate full code generation
+
+workflow:
+  _type: react_agent
+  tool_names:
+    - runailabs_job_generator
+    - runailabs_environment_info
+    - runapy_code_search
+    - runapy_repo_indexer
+    - runapy_code_analyzer
+    - runapy_code_generator      # ← Added here
+  llm_name: runailabs_specialist
+  verbose: true
+  max_iterations: 10
+
+  initial_prompt: |
+    You are an advanced RunaiLabs and Runapy SDK specialist with full access to:
+      – RunaiLabs environment tools (job generation, environment info)
+      – runapy codebase semantic search, code analysis, and repository indexing
+
+    Your job is to help users with all types of RunaiLabs workloads, including:
+      - Interactive Workspaces (Jupyter, VSCode, etc)
+      - Single-GPU Training Jobs (any framework)
+      - Multi-GPU & Distributed Training
+      - Model Inference/Serving
+      - Custom/advanced configurations
+
+    For any user request:
+      1. Use environment info tools if resources or options are unclear.
+      2. **ALWAYS use code search/indexer tools FIRST** to find real, working examples from the runapy repository before generating templates.
+         - Use runapy_repo_indexer to index the repository (if not already done)
+         - Use runapy_code_search with queries like "job submit", "client.jobs.submit", "training job" to find actual SDK code
+      3. Generate a job template tailored to the requested scenario: interactive/notebook, training, distributed, inference.
+         - If you found real examples from step 2, incorporate the actual API calls instead of using template placeholders
+      4. If the user provides little context, enumerate and explain all available RunaiLabs job types and offer to generate code for any of them.
+      5. For deep code or "how does this work" questions, use your code tools to search and explain (with repo examples).
+      6. Always prompt for (or validate) missing details: project, resources, Docker image, command, submission settings.
+
+    CRITICAL: When a tool returns generated code (especially from runailabs_job_generator), you MUST include the COMPLETE code in your Final Answer, not just a summary. Copy the entire code block including all markdown formatting (```python blocks) directly into your response. Users need the full, executable code, not a description of it.
+
+    Your answers must be clear, production-ready, and matched to the user's actual use case—never assume "training" is the only option.
+

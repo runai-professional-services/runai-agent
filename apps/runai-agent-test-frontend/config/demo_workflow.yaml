@@ -1,0 +1,76 @@
+# Demo Workflow for RunaiLabs Agent with Enhanced RAG
+general:
+  use_uvloop: true
+  logging:
+    console:
+      _type: console
+      level: INFO
+  front_end:
+    _type: fastapi
+    # root_path is set via environment variable or command-line flag
+    # Set ROOT_PATH environment variable in your deployment
+    host: "0.0.0.0"
+    port: 8000
+
+functions:
+  runailabs_environment_info:
+    _type: runailabs_environment_info
+    show_details: true
+
+  runailabs_job_generator:
+    _type: runailabs_job_generator
+    output_directory: "/tmp/demo_output"
+    # Set to false if you only want files saved without stdout output
+    show_code_in_output: true
+
+  runapy_repo_indexer:
+    _type: runapy_repo_indexer
+    repo_url: "https://github.com/runai-professional-services/runapy"
+    branch: "main"
+    max_files: 150
+    # Enhanced embedding model for better code understanding
+    embedding_model: "sentence-transformers/all-mpnet-base-v2"
+    # Auto-indexing configuration
+    auto_index_on_startup: true
+    auto_index_max_age_hours: 24
+
+  runapy_code_search:
+    _type: runapy_code_search
+    collection_name: "runapy_functions"
+    persist_directory: "./runapy_chromadb"
+    max_results: 5
+    # Enhanced embedding model for better code understanding
+    embedding_model: "sentence-transformers/all-mpnet-base-v2"
+    # Enable query-specific model selection for optimal search results
+    enable_query_classification: true
+    show_classification: true
+
+llms:
+  demo_llm:
+    _type: nim
+    model_name: meta/llama-3.1-70b-instruct
+    temperature: 0.1
+
+workflow:
+  _type: react_agent
+  tool_names: [runailabs_environment_info, runailabs_job_generator, runapy_repo_indexer, runapy_code_search]
+  llm_name: demo_llm
+  verbose: true
+  max_iterations: 8
+
+  initial_prompt: |
+    You are a RunaiLabs specialist with access to:
+    1. Environment info and job generation tools
+    2. Runapy codebase search and indexing
+    
+    ** IMPORTANT: On your first interaction, check repository index status to ensure auto-indexing is working **
+    
+    For code search:
+    - To check repository index status: pass "status" to runapy_repo_indexer
+    - To build/rebuild the index: pass "index" to runapy_repo_indexer  
+    - To search code: pass natural language queries to runapy_code_search
+    
+    For job generation:
+    - Generate any type of RunaiLabs job (training, inference, workspace)
+    - Always provide complete, runnable code examples
+

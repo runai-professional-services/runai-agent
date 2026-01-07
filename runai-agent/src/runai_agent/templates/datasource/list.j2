@@ -1,0 +1,28 @@
+{# List datasources template #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+# Step 2: List {{ resource_type }} datasources
+{% if project %}
+# Get project-scoped datasources
+{% include '_base/project_lookup.j2' %}
+
+response = requests.get(
+    f"{base_url}/api/v1/asset/datasource/{{ resource_type }}",
+    headers=headers,
+    params={"projectId": project_id},
+    verify=True
+)
+{% else %}
+# List all datasources (cluster-wide)
+response = requests.get(
+    f"{base_url}/api/v1/asset/datasource/{{ resource_type }}",
+    headers=headers,
+    verify=True
+)
+{% endif %}
+
+response.raise_for_status()
+result = response.json()
+

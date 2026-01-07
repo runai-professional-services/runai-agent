@@ -1,0 +1,37 @@
+{# Delete Project or Department template #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+# Step 2: List all {{ resource_type }} to find the one to delete
+response = requests.get(
+    f"{base_url}/api/v1/org-unit/{{ resource_type }}s",  # API endpoint uses plural
+    headers=headers,
+    verify=True
+)
+response.raise_for_status()
+# API returns plural key (e.g., "projects" or "departments")
+resource_key = "{{ resource_type }}s"  # Response key uses plural form
+items = response.json().get(resource_key, [])
+
+# Find the {{ resource_type }} by name
+target_item = None
+for item in items:
+    if item.get("name") == "{{ name }}":
+        target_item = item
+        break
+
+if not target_item:
+    result = {"error": f"{{ resource_type.capitalize() }} '{{ name }}' not found"}
+else:
+    item_id = target_item.get("id")
+    
+    # Step 3: Delete the {{ resource_type }}
+    delete_response = requests.delete(
+        f"{base_url}/api/v1/org-unit/{{ resource_type }}s/{item_id}",  # API endpoint uses plural
+        headers=headers,
+        verify=True
+    )
+    delete_response.raise_for_status()
+    result = {"status": "success", "message": f"{{ resource_type.capitalize() }} '{{ name }}' (ID: {item_id}) deleted successfully"}
+

@@ -1,0 +1,18 @@
+{# Project lookup template - Get projectId from project name (cluster_id already available from auth.j2) #}
+# Step 2: Get project info (required for datasources and workloads)
+projects_response = requests.get(
+    f"{base_url}/api/v1/org-unit/projects",
+    headers=headers,
+    verify=True
+)
+projects_response.raise_for_status()
+projects_data = projects_response.json()
+project_list = projects_data.get("projects", [])
+
+project_obj = next((p for p in project_list if p.get("name") == "{{ project }}"), None)
+if not project_obj:
+    raise ValueError(f"Project '{{ project }}' not found in cluster. Available projects: {[p.get('name') for p in project_list]}")
+
+project_id = int(project_obj["id"])
+# Note: cluster_id is already available from auth.j2
+

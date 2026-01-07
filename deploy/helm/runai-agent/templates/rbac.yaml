@@ -1,0 +1,43 @@
+{{- if .Values.rbac.create }}
+---
+# ClusterRole for kubectl troubleshooting
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "runai-agent.fullname" . }}-kubectl-access
+  labels:
+    {{- include "runai-agent.labels" . | nindent 4 }}
+rules:
+  # Read pods and logs for troubleshooting
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  
+  # Read events for troubleshooting
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+  
+  # Read Run:AI workloads
+  - apiGroups: ["run.ai"]
+    resources: ["trainings", "interactiveworkloads", "workspaces", "distributedworkloads"]
+    verbs: ["get", "list", "watch"]
+
+---
+# ClusterRoleBinding for the ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "runai-agent.fullname" . }}-kubectl-binding
+  labels:
+    {{- include "runai-agent.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "runai-agent.fullname" . }}-kubectl-access
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.rbac.serviceAccountName }}
+    namespace: {{ include "runai-agent.namespace" . }}
+{{- end }}
+

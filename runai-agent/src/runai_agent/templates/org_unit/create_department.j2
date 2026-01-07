@@ -1,0 +1,27 @@
+{# Create Department with GPU quota template #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+{% include '_base/cluster_lookup.j2' %}
+
+# Step 3: Create department with GPU quota
+payload = {
+    "name": "{{ name }}",
+    "clusterId": cluster_id,
+    {% if gpu_quota %}
+    "resources": [{
+        "gpu": {"deserved": {{ gpu_quota }}}
+    }]
+    {% endif %}
+}
+
+response = requests.post(
+    f"{base_url}/api/v1/org-unit/departments",
+    headers=headers,
+    json=payload,
+    verify=True
+)
+response.raise_for_status()
+result = response.json() if response.text else {"status": "success", "code": response.status_code}
+

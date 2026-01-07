@@ -1,0 +1,14 @@
+{# Universal GET BY ID template - works for any resource type #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+# Step 2: Get {{ resource_type }} by ID
+response = requests.get(
+    f"{base_url}/api/v1/{{ category }}/{{ resource_type }}/{{ resource_id }}",
+    headers=headers,
+    verify=True
+)
+response.raise_for_status()
+result = response.json()
+

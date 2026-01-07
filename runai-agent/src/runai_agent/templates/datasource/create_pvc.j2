@@ -1,0 +1,44 @@
+{# PVC datasource template - nested spec with claimInfo #}
+import requests
+
+{% include '_base/auth.j2' %}
+
+{% include '_base/project_lookup.j2' %}
+
+# Step 3: Create PVC datasource
+payload = {
+    "meta": {
+        "name": "{{ name }}",
+        "scope": "project",
+        "projectId": project_id,
+        "clusterId": cluster_id
+    },
+    "spec": {
+        "path": "/container/{{ name }}",
+        "existingPvc": False,
+        "claimName": "{{ name }}",
+        "readOnly": False,
+        "ephemeral": False,
+        "claimInfo": {
+            "size": "{{ size }}",
+            "accessModes": {
+                "readWriteOnce": True,
+                "readOnlyMany": False,
+                "readWriteMany": False
+            }{% if storage_class %},
+            "storageClass": "{{ storage_class }}"{% endif %},
+            "volumeMode": "Filesystem"
+        },
+        "dataSharing": False
+    }
+}
+
+response = requests.post(
+    f"{base_url}/api/v1/asset/datasource/pvc",
+    headers=headers,
+    json=payload,
+    verify=True
+)
+response.raise_for_status()
+result = response.json() if response.text else {"status": "success", "code": response.status_code}
+

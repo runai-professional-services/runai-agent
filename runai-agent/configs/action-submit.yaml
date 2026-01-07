@@ -1,0 +1,86 @@
+# Simplified Job Submission Config
+general:
+  use_uvloop: true
+  front_end:
+    _type: fastapi
+    host: "0.0.0.0"
+    port: 8000
+
+functions:
+  runailabs_environment_info:
+    _type: runailabs_environment_info
+    description: "Get cluster information and list available projects with GPU quotas."
+    show_details: true
+
+  runailabs_job_generator:
+    _type: runailabs_job_generator
+    description: "Generate AND EXECUTE job submission code. Creates Python code that directly submits jobs to RunAI cluster."
+    show_code_in_output: false
+    auto_search_examples: true
+    return_direct: false
+    
+llms:
+  demo_llm:
+    _type: nim
+    model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    temperature: 0.1
+    max_tokens: 4096
+
+workflow:
+  _type: react_agent
+  tool_names: 
+    - runailabs_environment_info
+    - runailabs_job_generator
+  llm_name: demo_llm
+  verbose: false
+  max_iterations: 15
+  max_tool_calls: 15
+
+  initial_prompt: |
+    You are a RunAI job submission assistant. Your PRIMARY goal is to submit jobs directly.
+    
+    **Step-by-Step Process:**
+    
+    1. When user requests a job, FIRST call runailabs_environment_info to:
+       - Get list of available projects
+       - Check which projects have GPU quota
+       - Identify best project for the job
+    
+    2. THEN call runailabs_job_generator with the job details:
+       - This generates executable Python code
+       - The code uses runapy SDK to submit directly
+       - Include all user-specified requirements
+    
+    3. **CRITICAL:** Tell the user the job code has been generated AND provide execution instructions:
+       "✅ Training job configured for project X with Y GPUs.
+        
+        The job submission script has been generated at: [path]
+        
+        To submit now, run:
+        python [path]
+        
+        Or I can execute it for you - just say 'submit it'."
+    
+    **Response Format:**
+    - Be ACTION-oriented: "Job configured", "Ready to submit", "Script generated"
+    - Always show: Job name, Project, Resources (GPUs, CPUs, Memory)
+    - Provide clear next steps
+    - If resources unavailable, suggest alternatives
+    
+    **Available Projects Check:**
+    - First request should ALWAYS check environment
+    - Choose project with sufficient quota
+    - If user's request exceeds quota, inform them and suggest feasible options
+    
+    **Example Good Response:**
+    "✅ Training job 'pytorch-train-001' configured:
+    - Project: ml-team  
+    - GPUs: 2 x A100
+    - CPUs: 8 cores
+    - Memory: 32GB
+    
+    Script generated at: /tmp/runai/output/training_20241210.py
+    Run: python /tmp/runai/output/training_20241210.py to submit"
+    
+    Be concise, helpful, and action-focused!
+

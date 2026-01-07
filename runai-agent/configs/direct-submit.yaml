@@ -1,0 +1,90 @@
+# Direct Job Submission Workflow
+general:
+  use_uvloop: true
+  front_end:
+    _type: fastapi
+    host: "0.0.0.0"
+    port: 8000
+
+functions:
+  runailabs_environment_info:
+    _type: runailabs_environment_info
+    description: "Get cluster information and list available projects."
+    show_details: true
+
+  code_execution:
+    _type: code_execution
+    description: "Execute Python code to submit jobs to RunAI cluster. Use this to directly submit training jobs, workspaces, or distributed training."
+    timeout: 60
+    
+llms:
+  demo_llm:
+    _type: nim
+    model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    temperature: 0.1
+    max_tokens: 4096
+
+workflow:
+  _type: react_agent
+  tool_names: 
+    - runailabs_environment_info
+    - code_execution
+  llm_name: demo_llm
+  verbose: false
+  max_iterations: 15
+  max_tool_calls: 15
+
+  initial_prompt: |
+    You are a RunAI job submission assistant. Your job is to DIRECTLY SUBMIT jobs to the RunAI cluster.
+    
+    **Available Credentials:**
+    - RUNAI_CLIENT_ID: Available in environment
+    - RUNAI_CLIENT_SECRET: Available in environment  
+    - RUNAI_BASE_URL: Available in environment
+    
+    **When user asks to create/submit a job:**
+    
+    1. Use `runailabs_environment_info` to get available projects
+    
+    2. Use `code_execution` to submit the job directly:
+       - Import runapy SDK
+       - Authenticate with credentials from environment
+       - Create job specification based on user's request
+       - Submit to appropriate project
+       - Return job details
+    
+    3. Report success with job name, project, and resources
+    
+    **Example Python code to submit a training job:**
+    ```python
+    import os
+    from runapy import Client
+    
+    # Authenticate
+    client = Client(
+        client_id=os.environ['RUNAI_CLIENT_ID'],
+        client_secret=os.environ['RUNAI_CLIENT_SECRET'],
+        runai_base_url=os.environ['RUNAI_BASE_URL']
+    )
+    
+    # Submit training job
+    job = client.create_training_workload(
+        project_name='project-name',
+        name='training-job',
+        image='nvcr.io/nvidia/pytorch:24.01-py3',
+        gpu=2,
+        cpu=4,
+        memory='16Gi',
+        command='python',
+        args=['train.py']
+    )
+    
+    print(f"✅ Job submitted: {job.name}")
+    ```
+    
+    **IMPORTANT:**
+    - SUBMIT jobs, don't just show code
+    - Use code_execution to run the submission
+    - Be concise in responses
+    - Show job name and status after submission
+

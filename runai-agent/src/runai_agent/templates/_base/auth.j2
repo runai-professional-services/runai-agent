@@ -1,0 +1,36 @@
+{# Authentication template - OAuth token acquisition + cluster ID lookup #}
+# Step 1: Authenticate with Run:AI API
+token_response = requests.post(
+    f"{base_url}/api/v1/token",
+    json={
+        "grantType": "client_credentials",
+        "clientId": client_id,
+        "clientSecret": client_secret
+    },
+    verify=True
+)
+token_response.raise_for_status()
+access_token = token_response.json()["accessToken"]
+headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+
+# Step 1b: Get cluster ID (required for most API operations)
+clusters_response = requests.get(
+    f"{base_url}/api/v1/clusters",
+    headers=headers,
+    verify=True
+)
+clusters_response.raise_for_status()
+clusters = clusters_response.json()
+
+# Extract cluster ID from response
+cluster_id = None
+if isinstance(clusters, list) and clusters:
+    cluster_id = clusters[0].get("uuid") or clusters[0].get("id")
+elif isinstance(clusters, dict) and "clusters" in clusters:
+    cluster_list = clusters["clusters"]
+    if cluster_list:
+        cluster_id = cluster_list[0].get("uuid") or cluster_list[0].get("id")
+
+if not cluster_id:
+    raise ValueError("Unable to retrieve cluster ID from API")
+

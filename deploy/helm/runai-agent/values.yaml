@@ -1,0 +1,156 @@
+# Default values for runai-agent
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  # Namespace where the agent will be deployed
+  # The agent can manage jobs across multiple Run:AI projects
+  namespace: "runai-agent"
+  # Deployment name for the agent
+  deploymentName: "runai-agent"
+
+# Container image configuration
+image:
+  repository: your-registry/nat-agent-ui
+  tag: latest
+  pullPolicy: Always
+
+# Run:AI credentials
+# WARNING: In production, use Kubernetes secrets instead of values.yaml!
+runai:
+  # Run:AI API credentials
+  clientId: ""  # Set via --set runai.clientId=xxx
+  clientSecret: ""  # Set via --set runai.clientSecret=xxx
+  baseUrl: "https://your-cluster.run.ai"  # Set via --set runai.baseUrl=xxx
+  
+  # Use existing secret (recommended for production)
+  existingSecret: ""  # Name of existing Kubernetes secret with credentials
+  # Expected keys in secret: RUNAI_CLIENT_ID, RUNAI_CLIENT_SECRET, RUNAI_BASE_URL
+
+# NVIDIA API key for LLM
+nvidia:
+  apiKey: ""  # Set via --set nvidia.apiKey=xxx
+  existingSecret: ""  # Or use existing secret with NVIDIA_API_KEY
+
+# Kubeconfig for kubectl troubleshooting (optional)
+kubeconfig:
+  # If empty, uses in-cluster ServiceAccount
+  existingSecret: ""  # Name of secret containing kubeconfig file
+  key: "config"  # Key in secret containing kubeconfig
+
+# GitHub token (optional - for code generation features)
+github:
+  token: ""
+  existingSecret: ""
+
+# Monitoring sidecar configuration
+monitoring:
+  # Enable monitoring sidecar for continuous failure detection
+  enabled: true
+  
+  # Poll interval in seconds
+  pollInterval: 60
+  
+  # Resource requests/limits for sidecar
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  
+  # Slack webhook URL for alerts (optional)
+  slackWebhookUrl: ""
+
+# Failure analysis configuration
+failureAnalysis:
+  # Enable persistent storage for failure history
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClassName: ""  # Set to your storage class
+    accessModes:
+      - ReadWriteOnce  
+    existingClaim: ""  # Use existing PVC instead of creating new one
+  
+  # Database configuration
+  database:
+    path: "/data/runai_failure_history.db"
+    lookbackDays: 7
+    patternThreshold: 3
+    enableAutoRemediation: false
+
+# Main agent container resources
+# Note: Agent doesn't need GPU resources
+resources:
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+# Service/Ingress configuration
+service:
+  type: ClusterIP
+  port: 3000
+  apiPort: 8000
+
+# Ingress configuration (optional)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: runai-agent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: runai-agent-tls
+  #    hosts:
+  #      - runai-agent.example.com
+
+# RBAC configuration
+rbac:
+  # Create RBAC resources for kubectl access
+  create: true
+  
+  # Use existing ServiceAccount
+  serviceAccountName: "default"
+
+# Node selector for pod placement
+nodeSelector: {}
+
+# Tolerations for node taints
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Additional environment variables
+extraEnv: []
+# Example:
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# Additional volume mounts
+extraVolumeMounts: []
+# Example:
+# - name: custom-data
+#   mountPath: /custom-data
+
+# Additional volumes
+extraVolumes: []
+# Example:
+# - name: custom-data
+#   configMap:
+#     name: custom-config
+

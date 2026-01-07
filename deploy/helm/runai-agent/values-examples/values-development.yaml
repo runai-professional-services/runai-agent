@@ -1,0 +1,64 @@
+# Development deployment with monitoring but temporary storage
+# Good for: Testing monitoring features, development, CI/CD
+
+global:
+  namespace: "runai-agent-dev"
+  deploymentName: "runai-agent-dev"
+
+image:
+  repository: your-registry/nat-agent-ui
+  tag: latest
+  pullPolicy: Always
+
+# Use existing secrets
+runai:
+  existingSecret: "runai-creds-dev"
+
+nvidia:
+  existingSecret: "nvidia-key-dev"
+
+kubeconfig:
+  existingSecret: "kubeconfig-dev"
+
+# Enable monitoring for testing
+monitoring:
+  enabled: true
+  pollInterval: 60  # Every minute
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+# Small persistent storage for testing
+failureAnalysis:
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClassName: ""  # Use default
+  database:
+    lookbackDays: 7
+    patternThreshold: 2
+
+# Development resources
+resources:
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+    gpu: 0
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+rbac:
+  create: true
+
+# Additional env vars for debugging
+extraEnv:
+  - name: LOG_LEVEL
+    value: "DEBUG"
+  - name: RUNAI_AGENT_DEBUG
+    value: "true"
+

@@ -1,0 +1,293 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "runai-agent.fullname" . }}
+  namespace: {{ include "runai-agent.namespace" . }}
+  labels:
+    {{- include "runai-agent.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  # Use Recreate strategy to avoid volume mount conflicts with ReadWriteOnce PVC
+  # This ensures the old pod is fully terminated before the new pod starts
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "runai-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "runai-agent.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.rbac.create }}
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      {{- end }}
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      containers:
+        # Main agent container
+        - name: nat-agent
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: api
+              containerPort: 8000
+              protocol: TCP
+          
+          env:
+            # NVIDIA API Key
+            - name: NVIDIA_API_KEY
+              {{- if .Values.nvidia.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.nvidia.existingSecret }}
+                  key: NVIDIA_API_KEY
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-nvidia-key
+                  key: NVIDIA_API_KEY
+              {{- end }}
+            
+            # Run:AI credentials
+            - name: RUNAI_CLIENT_ID
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_CLIENT_ID
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_CLIENT_ID
+              {{- end }}
+            
+            - name: RUNAI_CLIENT_SECRET
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_CLIENT_SECRET
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_CLIENT_SECRET
+              {{- end }}
+            
+            - name: RUNAI_BASE_URL
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_BASE_URL
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_BASE_URL
+              {{- end }}
+            
+            # Failure analysis database path
+            - name: RUNAI_FAILURE_DB_PATH
+              value: {{ .Values.failureAnalysis.database.path | quote }}
+            
+            {{- if .Values.github.token }}
+            # GitHub token (optional)
+            - name: GITHUB_TOKEN
+              {{- if .Values.github.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.github.existingSecret }}
+                  key: GITHUB_TOKEN
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-github-token
+                  key: GITHUB_TOKEN
+              {{- end }}
+            {{- end }}
+            
+            {{- if .Values.kubeconfig.existingSecret }}
+            # Kubeconfig path
+            - name: KUBECONFIG
+              value: "/root/.kube/config"
+            {{- end }}
+            
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          
+          {{- if .Values.failureAnalysis.persistence.enabled }}
+          volumeMounts:
+            - name: failure-db
+              mountPath: /data
+            {{- if .Values.kubeconfig.existingSecret }}
+            - name: kubeconfig
+              mountPath: /root/.kube
+              readOnly: true
+            {{- end }}
+            {{- range .Values.extraVolumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        
+        {{- if .Values.monitoring.enabled }}
+        # Monitoring sidecar container
+        - name: monitor-sidecar
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              # Activate venv from /app/.venv (Docker) or /app/runai-agent/.venv (local)
+              if [ -f /app/.venv/bin/activate ]; then
+                source /app/.venv/bin/activate
+              elif [ -f /app/runai-agent/.venv/bin/activate ]; then
+                source /app/runai-agent/.venv/bin/activate
+              fi
+              cd /app/runai-agent
+              echo "🔍 Starting monitoring sidecar..."
+              python scripts/monitor_sidecar.py --poll-interval {{ .Values.monitoring.pollInterval }}
+          
+          env:
+            # Run:AI credentials
+            - name: RUNAI_CLIENT_ID
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_CLIENT_ID
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_CLIENT_ID
+              {{- end }}
+            
+            - name: RUNAI_CLIENT_SECRET
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_CLIENT_SECRET
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_CLIENT_SECRET
+              {{- end }}
+            
+            - name: RUNAI_BASE_URL
+              {{- if .Values.runai.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runai.existingSecret }}
+                  key: RUNAI_BASE_URL
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-runai-creds
+                  key: RUNAI_BASE_URL
+              {{- end }}
+            
+            # NVIDIA API Key
+            - name: NVIDIA_API_KEY
+              {{- if .Values.nvidia.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.nvidia.existingSecret }}
+                  key: NVIDIA_API_KEY
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "runai-agent.fullname" . }}-nvidia-key
+                  key: NVIDIA_API_KEY
+              {{- end }}
+            
+            # Failure database path
+            - name: RUNAI_FAILURE_DB_PATH
+              value: {{ .Values.failureAnalysis.database.path | quote }}
+            
+            {{- if .Values.kubeconfig.existingSecret }}
+            - name: KUBECONFIG
+              value: "/root/.kube/config"
+            {{- end }}
+            
+            {{- if .Values.monitoring.slackWebhookUrl }}
+            - name: SLACK_WEBHOOK_URL
+              value: {{ .Values.monitoring.slackWebhookUrl | quote }}
+            {{- end }}
+          
+          {{- if .Values.failureAnalysis.persistence.enabled }}
+          volumeMounts:
+            - name: failure-db
+              mountPath: /data
+            {{- if .Values.kubeconfig.existingSecret }}
+            - name: kubeconfig
+              mountPath: /root/.kube
+              readOnly: true
+            {{- end }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.monitoring.resources | nindent 12 }}
+        {{- end }}
+      
+      {{- if .Values.failureAnalysis.persistence.enabled }}
+      volumes:
+        - name: failure-db
+          persistentVolumeClaim:
+            claimName: {{ include "runai-agent.pvcName" . }}
+        {{- if .Values.kubeconfig.existingSecret }}
+        - name: kubeconfig
+          secret:
+            secretName: {{ .Values.kubeconfig.existingSecret }}
+        {{- end }}
+        {{- range .Values.extraVolumes }}
+        - name: {{ .name }}
+          {{- if .configMap }}
+          configMap:
+            name: {{ .configMap.name }}
+          {{- else if .secret }}
+          secret:
+            secretName: {{ .secret.secretName }}
+          {{- else if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+

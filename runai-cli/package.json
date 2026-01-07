@@ -1,0 +1,43 @@
+{
+  "name": "@runai/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Lightweight TypeScript CLI for RunAI Agent",
+  "main": "dist/index.js",
+  "bin": {
+    "runai-cli": "./bin/runai-cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "runai",
+    "agent",
+    "cli",
+    "nvidia",
+    "kubernetes"
+  ],
+  "author": "NVIDIA",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "axios": "^1.6.5",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "inquirer": "^9.2.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/inquirer": "^9.0.7",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

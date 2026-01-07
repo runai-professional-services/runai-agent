@@ -1,0 +1,19 @@
+apiVersion: v2
+name: runai-agent
+description: Intelligent conversational agent for Run:AI cluster management with advanced failure analysis
+type: application
+version: 0.1.0
+appVersion: "0.1.27"
+keywords:
+  - runai
+  - ai
+  - machine-learning
+  - nvidia
+  - kubernetes
+maintainers:
+  - name: Brad Soper
+  - name: Vivek Kolasani
+home: https://github.com/runai-professional-services/runai-agent
+sources:
+  - https://github.com/runai-professional-services/runai-agent
+

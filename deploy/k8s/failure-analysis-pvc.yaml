@@ -1,0 +1,19 @@
+---
+# PersistentVolumeClaim for shared failure analysis database
+# This PVC is shared between the main agent and monitoring sidecar
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: failure-analysis-pvc
+  namespace: runai-${RUNAI_PROJECT}
+spec:
+  accessModes:
+    - ReadWriteOnce  # RWO is fine - both containers are in same pod
+  resources:
+    requests:
+      storage: 2Gi
+  # Uncomment and set your storage class
+  # storageClassName: nfs-client
+  # storageClassName: efs-sc
+  # storageClassName: standard
+

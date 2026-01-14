@@ -12,6 +12,7 @@ from .workload_lifecycle import RunaiWorkloadLifecycleConfig, runai_manage_workl
 from .template_executor import RunaiTemplateExecutorConfig, runai_template_executor
 from .proactive_monitor import RunaiProactiveMonitorConfig, runai_proactive_monitor
 from .failure_analyzer import FailureAnalyzerConfig, runai_failure_analyzer
+from .runai_docs_helper import RunaiDocsHelperConfig, runai_docs_helper
 
 __all__ = [
     'RunailabsEnvironmentConfig',
@@ -38,5 +39,7 @@ __all__ = [
     'runai_proactive_monitor',
     'FailureAnalyzerConfig',
     'runai_failure_analyzer',
+    'RunaiDocsHelperConfig',
+    'runai_docs_helper',
 ]
 

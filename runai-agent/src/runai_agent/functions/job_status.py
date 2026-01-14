@@ -13,7 +13,7 @@ from ..utils import _search_workload_by_name_helper, logger
 
 class RunaiJobStatusConfig(FunctionBaseConfig, name="runai_job_status"):
     """Check status of Run:AI jobs for troubleshooting"""
-    description: str = "Check the status of running/completed jobs. Use to get quick status updates for workloads."
+    description: str = "Check the status of a specific job or list all jobs in a project. Use to get quick status updates for workloads."
     include_details: bool = Field(default=True, description="Include detailed status information")
     allowed_projects: List[str] = Field(default_factory=lambda: ["*"], description="Projects this function can access (use ['*'] for all)")
 
@@ -21,9 +21,13 @@ class RunaiJobStatusConfig(FunctionBaseConfig, name="runai_job_status"):
 @register_function(config_type=RunaiJobStatusConfig)
 async def runai_job_status(config: RunaiJobStatusConfig, builder: Builder):
     """
-    Check the status of a Run:AI job and provide troubleshooting information.
+    Check the status of a Run:AI job or list all jobs in a project.
     
-    This function fetches job status from the Run:AI API and provides:
+    This function can:
+    - Check status of a specific job (provide job_name)
+    - List all jobs in a project (provide project only)
+    
+    Provides:
     - Current job state (Running, Failed, Pending, Completed, etc.)
     - Basic job information (GPUs, image, project)
     - Time information (created, started, duration)
@@ -38,12 +42,212 @@ async def runai_job_status(config: RunaiJobStatusConfig, builder: Builder):
             'RUNAI_BASE_URL': os.environ.get('RUNAI_BASE_URL', ''),
         }
     
-    async def _status_fn(job_name: str) -> str:
-        """Check status of a specific job
+    async def _list_all_jobs(project: str) -> str:
+        """List all jobs in a project"""
+        
+        secure_config = get_secure_config()
+        
+        # Check credentials
+        if not all([secure_config['RUNAI_CLIENT_ID'], 
+                   secure_config['RUNAI_CLIENT_SECRET'],
+                   secure_config['RUNAI_BASE_URL']]):
+            return """
+⚠️ **Run:AI Credentials Not Configured**
+
+Cannot list jobs without Run:AI API credentials.
+
+**Required environment variables:**
+- `RUNAI_CLIENT_ID`
+- `RUNAI_CLIENT_SECRET`
+- `RUNAI_BASE_URL`
+"""
+        
+        # Check if SDK is available
+        try:
+            from runai.configuration import Configuration
+            from runai.api_client import ApiClient
+            from runai.runai_client import RunaiClient
+            logger.debug("✓ Run:AI SDK available")
+        except ImportError:
+            return """
+⚠️ **Run:AI SDK Not Available**
+
+Install dependencies: `pip install runapy==1.223.0`
+"""
+        
+        try:
+            # Validate project access
+            if "*" not in config.allowed_projects and project not in config.allowed_projects:
+                return f"""
+❌ **Access Denied**
+
+Project `{project}` is not in the allowed list: {', '.join(config.allowed_projects)}
+"""
+            
+            # Initialize client
+            configuration = Configuration(
+                client_id=secure_config['RUNAI_CLIENT_ID'],
+                client_secret=secure_config['RUNAI_CLIENT_SECRET'],
+                runai_base_url=secure_config['RUNAI_BASE_URL'],
+            )
+            client = RunaiClient(ApiClient(configuration))
+            
+            logger.info(f"Fetching workloads for project: {project}")
+            
+            # Get all workloads
+            response = client.workloads.workloads.get_workloads()
+            workloads_data = response.data if hasattr(response, 'data') else response
+            all_workloads = workloads_data.get("workloads", []) if isinstance(workloads_data, dict) else []
+            
+            # Filter by project
+            project_workloads = [w for w in all_workloads 
+                                if w.get('projectName') == project or w.get('project') == project]
+            
+            if not project_workloads:
+                return f"""
+📋 **Workload List for Project: {project}**
+
+No workloads found in this project.
+
+**Possible reasons:**
+- Project name is incorrect (check spelling and case)
+- No workloads have been submitted to this project yet
+- Workloads may have been deleted or completed and cleaned up
+
+**Next steps:**
+- Submit a new workload: Use `runai_submit_workload`
+- Check project name: Verify the exact project name in Run:AI UI
+"""
+            
+            # Group by status
+            from collections import defaultdict
+            workloads_by_status = defaultdict(list)
+            
+            for w in project_workloads:
+                phase = w.get('phase', w.get('status', 'Unknown'))
+                workloads_by_status[phase].append(w)
+            
+            # Build report
+            report = f"""
+📋 **Workload List for Project: {project}**
+
+**Total Workloads:** {len(project_workloads)}
+
+---
+
+"""
+            
+            # Sort statuses: Running first, then Failed, then others
+            status_order = ['Running', 'Failed', 'Error', 'Pending', 'Initializing', 'Completed', 'Suspended']
+            sorted_statuses = []
+            for status in status_order:
+                if status in workloads_by_status:
+                    sorted_statuses.append(status)
+            # Add remaining statuses
+            for status in sorted(workloads_by_status.keys()):
+                if status not in sorted_statuses:
+                    sorted_statuses.append(status)
+            
+            # Display workloads grouped by status
+            for status in sorted_statuses:
+                workloads = workloads_by_status[status]
+                
+                # Status emoji
+                status_emoji = {
+                    'Running': '🟢',
+                    'Completed': '✅',
+                    'Failed': '🔴',
+                    'Error': '🔴',
+                    'Pending': '🟡',
+                    'Initializing': '🟡',
+                    'Suspended': '⏸️'
+                }.get(status, '🔵')
+                
+                report += f"## {status_emoji} {status} ({len(workloads)})\n\n"
+                
+                for w in sorted(workloads, key=lambda x: x.get('createdAt', ''), reverse=True):
+                    name = w.get('name', 'unknown')
+                    workload_type = w.get('type', 'unknown')
+                    gpu_count = w.get('requestedGPUs', w.get('gpuCount', 0))
+                    created_at = w.get('createdAt', 'unknown')
+                    
+                    # Format creation time
+                    if created_at and created_at != 'unknown':
+                        try:
+                            from datetime import datetime
+                            dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                            created_at_display = dt.strftime('%Y-%m-%d %H:%M')
+                        except:
+                            created_at_display = created_at[:16]
+                    else:
+                        created_at_display = 'unknown'
+                    
+                    gpu_info = f" | {gpu_count} GPU{'s' if gpu_count != 1 else ''}" if gpu_count > 0 else ""
+                    report += f"- **{name}** ({workload_type}{gpu_info}) - Created: {created_at_display}\n"
+                
+                report += "\n"
+            
+            # Add summary
+            report += f"""
+---
+
+**Summary:**
+- Total workloads: {len(project_workloads)}
+- Types: {', '.join(set(w.get('type', 'unknown') for w in project_workloads))}
+- Total GPUs requested: {sum(w.get('requestedGPUs', 0) for w in project_workloads)}
+
+**Next Steps:**
+- View details: Use `runai_job_status(job_name="<job_name>")` for specific job
+- Manage workloads: Use `runai_manage_workload` to suspend, resume, or delete
+- Submit new workload: Use `runai_submit_workload`
+"""
+            
+            return report
+            
+        except Exception as e:
+            logger.error(f"Error listing workloads: {str(e)}")
+            return f"""
+❌ **Error Listing Workloads**
+
+**Project:** {project}
+**Error:** {str(e)}
+
+**Troubleshooting:**
+1. Verify Run:AI credentials are correct
+2. Check that the project name exists: `{project}`
+3. Ensure you have permission to view workloads in this project
+4. Check network connectivity to Run:AI cluster
+"""
+    
+    async def _status_fn(job_name: str = None, project: str = None) -> str:
+        """Check status of a specific job or list all jobs in a project
         
         Args:
-            job_name: Either the job name (e.g., 'myjob') or workload UUID
+            job_name: Optional - specific job name or workload UUID
+            project: Optional - project name to list all jobs from
+        
+        If only project is provided, lists all jobs.
+        If job_name is provided, shows detailed status for that job.
         """
+        
+        # If project is specified without job_name, list all jobs
+        if project and not job_name:
+            return await _list_all_jobs(project)
+        
+        # If no parameters at all, return error
+        if not job_name and not project:
+            return """
+❌ **Missing Parameters**
+
+Please provide either:
+- `job_name` to check a specific job's status
+- `project` to list all jobs in a project
+- Both to check a specific job in a specific project
+
+**Examples:**
+- Check specific job: `runai_job_status(job_name="training-01")`
+- List all jobs: `runai_job_status(project="project-01")`
+"""
         
         secure_config = get_secure_config()
         
@@ -394,7 +598,7 @@ kubectl describe pod -n runai-{job_project} -l workloadName={job_name}
     try:
         yield FunctionInfo.create(
             single_fn=_status_fn,
-            description="Check the status of running/completed jobs. Use to get quick status updates for workloads."
+            description="Check the status of a specific job OR list all jobs in a project. Provide 'job_name' for specific job status, or 'project' to list all jobs. Shows status, GPUs, type, and creation time."
         )
     except GeneratorExit:
         logger.info("Job status checker exited")

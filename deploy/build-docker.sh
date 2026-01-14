@@ -34,6 +34,7 @@ echo ""
 echo -e "${BLUE}Step 1: Building Docker image...${NC}"
 cd "$(dirname "$0")/.." || exit 1
 docker build \
+    --platform linux/amd64 \
     -t "${FULL_IMAGE_NAME}" \
     -f deploy/Dockerfile \
     .

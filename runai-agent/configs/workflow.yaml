@@ -60,7 +60,7 @@ functions:
 
   runai_job_status:
     _type: runai_job_status
-    description: "Check the status of running/completed jobs. Use to get quick status updates for workloads."
+    description: "Check the status of a specific job OR list all jobs in a project. Provide job_name for specific status, or project to list all jobs. Shows status, GPUs, type, and creation time."
     include_details: true
     # allowed_projects: ["project-01"]  # Uncomment to restrict to specific projects
 
@@ -228,7 +228,7 @@ workflow:
     - runai_submit_distributed_workload: Submit distributed/multi-node training jobs (PyTorch, TensorFlow, MPI, Horovod)
     - runai_submit_workspace: Submit interactive workspace sessions (Jupyter, VSCode)
     - runai_submit_batch: 🎯 **Submit multiple jobs in one operation** (training, distributed, or workspace)
-    - runai_job_status: Check the status of a job (quick status check)
+    - runai_job_status: 📋 **Check specific job status OR list all jobs in a project** (provide job_name for details, or project to list all)
     - runai_manage_workload: 🎯 **Unified lifecycle management** (suspend, resume, delete any workload type)
     - runai_proactive_monitor: 🔔 **Proactive monitoring & auto-troubleshooting** (continuously monitor jobs and alert on failures)
     - runai_failure_analyzer: 🔬 **Advanced failure analysis** (pattern recognition, cross-job correlation, automated remediation)

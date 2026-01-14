@@ -809,10 +809,14 @@ The cluster is running smoothly with no recorded failures in the specified time 
         
         stats = db.get_pattern_stats(days=days)
         
+        # Get recent failures to show job names
+        all_failures = db.get_recent_failures(days=days)
+        
         report = f"""
 📊 **Failure Statistics**
 
 **Time Period:** Last {days} days
+**Total Failures:** {len(all_failures)} events
 
 ---
 
@@ -830,7 +834,40 @@ The cluster is running smoothly with no recorded failures in the specified time 
         if stats['node_failures']:
             report += "\n## Node Failures\n\n"
             for node, count in list(stats['node_failures'].items())[:10]:
-                report += f"- **{node}**: {count} failures\n"
+                # Show 'unknown' as a special case with explanation
+                if node == 'unknown' or node is None or node == '':
+                    report += f"- **Unknown Node** (node name not available in API): {count} failures\n"
+                else:
+                    report += f"- **{node}**: {count} failures\n"
+        
+        # Add failed job names section
+        if all_failures:
+            report += "\n## Failed Jobs\n\n"
+            
+            # Group failures by job name
+            from collections import defaultdict
+            jobs_by_project = defaultdict(list)
+            for f in all_failures:
+                jobs_by_project[f['project']].append({
+                    'name': f['job_name'],
+                    'phase': f['failure_type'],
+                    'timestamp': f['timestamp'],
+                    'node': f.get('node_name', 'unknown')
+                })
+            
+            # Display failures grouped by project
+            for project in sorted(jobs_by_project.keys()):
+                report += f"\n### {project}\n\n"
+                # Get unique job names (jobs may have multiple failure events)
+                unique_jobs = {}
+                for job in jobs_by_project[project]:
+                    job_name = job['name']
+                    if job_name not in unique_jobs:
+                        unique_jobs[job_name] = job
+                
+                for job_name, job_info in sorted(unique_jobs.items()):
+                    node_info = f" on `{job_info['node']}`" if job_info['node'] != 'unknown' else ""
+                    report += f"- **{job_name}** - {job_info['phase']}{node_info} (last seen: {job_info['timestamp']})\n"
         
         return report
     

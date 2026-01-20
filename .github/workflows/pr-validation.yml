@@ -1,0 +1,192 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # Run full test suite
+  tests:
+    name: Run Test Suite
+    uses: ./.github/workflows/test.yml
+
+  # Check for breaking changes
+  breaking-changes:
+    name: Check for Breaking Changes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for breaking changes in API
+        run: |
+          echo "Checking for breaking changes..."
+          
+          # Check if workflow.yaml has breaking changes
+          if git diff origin/main -- runai-agent/configs/workflow.yaml | grep -E "^-.*tool_names|^-.*functions"; then
+            echo "⚠️ Warning: Potential breaking changes detected in workflow configuration" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check if function signatures changed
+          if git diff origin/main -- runai-agent/src/runai_agent/functions/*.py | grep -E "^-.*async def|^-.*def.*\("; then
+            echo "⚠️ Warning: Function signatures may have changed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Validate CHANGELOG
+  changelog-check:
+    name: Validate CHANGELOG
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check CHANGELOG.md updated
+        run: |
+          if git diff origin/main --name-only | grep -q "CHANGELOG.md"; then
+            echo "✅ CHANGELOG.md has been updated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Warning: CHANGELOG.md has not been updated" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please update CHANGELOG.md with your changes under the [Unreleased] section." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Check code quality
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install ruff black isort
+
+      - name: Check code formatting
+        run: |
+          cd runai-agent/src
+          black --check . 2>&1 | tee black-output.txt || true
+          
+          if [ -s black-output.txt ]; then
+            echo "## Code Formatting Issues" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`black .\` to auto-format your code." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat black-output.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check import sorting
+        run: |
+          cd runai-agent/src
+          isort --check-only . 2>&1 | tee isort-output.txt || true
+          
+          if [ -s isort-output.txt ]; then
+            echo "## Import Sorting Issues" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`isort .\` to auto-sort imports." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Check documentation
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for new functions without docs
+        run: |
+          echo "Checking for new functions..."
+          
+          NEW_FUNCTIONS=$(git diff origin/main --name-only | grep "runai-agent/src/runai_agent/functions/" | grep -v "__pycache__" | grep ".py$" || true)
+          
+          if [ -n "$NEW_FUNCTIONS" ]; then
+            echo "## New Functions Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please ensure:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Function is documented in \`workflow.yaml\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. README.md is updated with usage examples" >> $GITHUB_STEP_SUMMARY
+            echo "3. Function follows the template pattern in cursor rules" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "New function files:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$NEW_FUNCTIONS" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Size check
+  pr-size:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR size
+        run: |
+          ADDITIONS=$(git diff origin/main --shortstat | grep -oP '\d+(?= insertions?)' || echo "0")
+          DELETIONS=$(git diff origin/main --shortstat | grep -oP '\d+(?= deletions?)' || echo "0")
+          TOTAL=$((ADDITIONS + DELETIONS))
+          
+          echo "## PR Size: $TOTAL lines" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Additions:** $ADDITIONS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deletions:** $DELETIONS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $TOTAL -gt 1000 ]; then
+            echo "⚠️ **Warning:** This is a large PR. Consider breaking it into smaller PRs for easier review." >> $GITHUB_STEP_SUMMARY
+          elif [ $TOTAL -gt 500 ]; then
+            echo "ℹ️ **Note:** This is a medium-sized PR." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Good:** This is a reasonably sized PR." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [tests, breaking-changes, changelog-check, code-quality, docs-check, pr-size]
+    if: always()
+    
+    steps:
+      - name: Generate PR summary
+        run: |
+          echo "# Pull Request Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Breaking Changes | ${{ needs.breaking-changes.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CHANGELOG | ${{ needs.changelog-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Documentation | ${{ needs.docs-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PR Size | ${{ needs.pr-size.result }} |" >> $GITHUB_STEP_SUMMARY

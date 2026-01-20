@@ -1,0 +1,69 @@
+# Changelog
+
+All notable changes to the RunAI Agent project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- CI/CD automation with GitHub Actions
+- Automated Docker image building and publishing
+- Automated Helm chart publishing to GitHub Pages
+- Automated release workflow with changelog generation
+- Comprehensive testing pipeline
+
+## [0.1.36] - 2026-01-14
+
+### Added
+- 🤖 Intelligent agent powered by NVIDIA Llama 3.3 Nemotron Super (49B) with ReAct reasoning
+- 💬 Modern web UI with real-time streaming responses
+- 🔧 Run:AI cluster integration with specialized tools
+- 🚀 Direct job submission with safety validations
+- 📦 Batch job submission (training, distributed, workspace)
+- 🔄 Unified lifecycle management (suspend, resume, delete)
+- 🔔 Proactive monitoring with auto-troubleshooting and Slack alerts
+- 🔬 Advanced failure analysis with pattern recognition
+- 🗑️ Two-step confirmation for destructive operations
+- ⚡ Template-based API executor for datasource management (20-50x faster)
+- 🔍 Job status and kubectl diagnostics
+- 🩺 Deep troubleshooting with pod logs and AI-powered diagnosis
+- 📚 Documentation search for Run:AI features
+- 🧠 Optional agent reasoning view for debugging
+- 🔒 Auto-configuration for Run:AI environments
+- 🌙 Dark/Light theme support
+
+### Infrastructure
+- Docker deployment with Nginx reverse proxy
+- Helm chart for Kubernetes deployment
+- TypeScript CLI for remote connections
+- Python 3.11+ backend with FastAPI
+- Next.js 14 frontend with TypeScript and Tailwind CSS
+
+### Security
+- Project whitelisting for access control
+- Environment-based credential management
+- SSL verification for API calls
+- RBAC support for Kubernetes deployments
+
+---
+
+## Release Types
+
+- **Major** (x.0.0): Breaking changes, major feature additions
+- **Minor** (0.x.0): New features, non-breaking changes
+- **Patch** (0.0.x): Bug fixes, minor improvements
+
+## Sections
+
+- **Added**: New features
+- **Changed**: Changes to existing functionality
+- **Deprecated**: Soon-to-be removed features
+- **Removed**: Removed features
+- **Fixed**: Bug fixes
+- **Security**: Security improvements or fixes
+- **Infrastructure**: Deployment, CI/CD, or infrastructure changes
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.36...HEAD
+[0.1.36]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.36

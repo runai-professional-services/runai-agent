@@ -1,5 +1,10 @@
 # Run:AI Agent with NeMo Agent Toolkit
 
+[![Tests](https://github.com/runai-professional-services/runai-agent/workflows/Test%20Suite/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/test.yml)
+[![Docker](https://github.com/runai-professional-services/runai-agent/workflows/Build%20and%20Push%20Docker%20Image/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/docker.yml)
+[![Release](https://github.com/runai-professional-services/runai-agent/workflows/Release/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/release.yml)
+[![Helm](https://github.com/runai-professional-services/runai-agent/workflows/Publish%20Helm%20Chart/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/helm-publish.yml)
+
 An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT), featuring a modern web UI and specialized tools for Run:Ai cluster management.
 
 ## 📑 Table of Contents
@@ -1592,7 +1597,96 @@ This will show the agent's thought process, tool calls, and intermediate results
 This project uses:
 - **Backend**: Python 3.11+, FastAPI, NeMo Agent Toolkit, LangChain
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Infrastructure**: Docker, Kubernetes, Run:Ai
+- **Infrastructure**: Docker, Kubernetes, Run:AI
+
+See our [Contributing Guide](.github/PULL_REQUEST_TEMPLATE.md) and [Cursor Rules](.cursorrules) for development guidelines.
+
+## 📊 CI/CD Pipeline
+
+This project uses GitHub Actions for automated testing, building, and deployment.
+
+### 🔄 Automated Workflows
+
+#### 🧪 Testing & Validation
+- **Continuous Testing**: Runs on every push and PR
+  - Python tests (pytest) on Python 3.11 & 3.12
+  - Frontend build and tests (Next.js)
+  - CLI build and tests (TypeScript)
+  - Code linting (ruff, black, isort)
+  - Security scanning (bandit, safety, Trivy)
+  - Helm chart validation
+
+#### 🐳 Docker Images
+- **Automated Builds**: On every push to `main` and version tags
+- **Registry**: GitHub Container Registry (ghcr.io)
+- **Multi-platform**: linux/amd64, linux/arm64
+- **Tags**: `latest`, `v*.*.*`, `main-sha`
+
+**Pull the latest image:**
+```bash
+docker pull ghcr.io/runai-professional-services/runai-agent:latest
+```
+
+#### 🚀 Releases
+- **Automated Releases**: Triggered on merge to `main`
+- **Version Management**: Auto-increments patch version
+- **Changelog**: Automatically updated from commits
+- **GitHub Releases**: Created with release notes
+
+**Manual release:**
+```bash
+# Go to: Actions → Release → Run workflow
+# Specify version (e.g., 0.2.0) and type (patch/minor/major)
+```
+
+#### ⎈ Helm Chart Publishing
+- **Automated Publishing**: On version tags
+- **Repository**: GitHub Pages
+- **URL**: https://runai-professional-services.github.io/runai-agent
+
+**Add Helm repository:**
+```bash
+helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
+helm repo update
+helm install runai-agent runai-agent/runai-agent
+```
+
+#### 🔍 PR Validation
+Every pull request is automatically validated:
+- ✅ Full test suite
+- 🔍 Breaking change detection
+- 📝 CHANGELOG.md validation
+- 🎨 Code quality checks
+- 📚 Documentation checks
+- 📊 PR size analysis
+
+#### 🤖 Dependency Management
+- **Dependabot**: Automated dependency updates
+- **Auto-merge**: Patch and minor updates auto-merged after tests pass
+- **Coverage**: Python, npm, GitHub Actions, Docker
+
+### 📈 Status & Monitoring
+
+- **Actions Dashboard**: [View all workflows](https://github.com/runai-professional-services/runai-agent/actions)
+- **Security Alerts**: [View security findings](https://github.com/runai-professional-services/runai-agent/security)
+- **Container Registry**: [View published images](https://github.com/orgs/runai-professional-services/packages?repo_name=runai-agent)
+- **Helm Repository**: [View published charts](https://runai-professional-services.github.io/runai-agent)
+
+### 🛠️ For Developers
+
+**Before submitting a PR:**
+1. Update `CHANGELOG.md` under `[Unreleased]` section
+2. Run tests locally: `cd runai-agent && pytest tests/`
+3. Format code: `black . && isort .`
+4. Lint code: `ruff check .`
+5. Build Docker image: `./deploy/build-docker.sh`
+6. Test Helm chart: `helm lint ./deploy/helm/runai-agent`
+
+**Creating a new release:**
+1. Merge PR to `main` (auto-creates patch release)
+2. Or manually trigger release workflow for specific version
+
+See [.github/workflows/README.md](.github/workflows/README.md) for detailed CI/CD documentation.
 
 ## 📄 License
 

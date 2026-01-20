@@ -1,0 +1,190 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.37)'
+        required: true
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  # First, run tests to ensure everything passes
+  test:
+    name: Run Tests Before Release
+    uses: ./.github/workflows/test.yml
+
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep -oP 'version = "\K[^"]+' runai-agent/pyproject.toml)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate next version
+        id: version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.current_version }}"
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            NEW_VERSION="${{ github.event.inputs.version }}"
+          else
+            # Auto-increment patch version
+            IFS='.' read -ra VERSION <<< "$CURRENT"
+            MAJOR=${VERSION[0]}
+            MINOR=${VERSION[1]}
+            PATCH=${VERSION[2]}
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Next version: $NEW_VERSION"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.new_version }}"/' runai-agent/pyproject.toml
+
+      - name: Update version in Chart.yaml
+        run: |
+          sed -i 's/appVersion: ".*"/appVersion: "${{ steps.version.outputs.new_version }}"/' deploy/helm/runai-agent/Chart.yaml
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          # Create changelog entry
+          CHANGELOG="## [${{ steps.version.outputs.new_version }}] - $(date +%Y-%m-%d)
+          
+          ### Changed
+          $COMMITS
+          "
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update CHANGELOG.md
+        run: |
+          # Insert new version after [Unreleased]
+          sed -i "/## \[Unreleased\]/a\\
+          \\
+          ${{ steps.changelog.outputs.changelog }}" CHANGELOG.md
+          
+          # Update comparison links
+          echo "" >> CHANGELOG.md
+          echo "[Unreleased]: https://github.com/${{ github.repository }}/compare/v${{ steps.version.outputs.new_version }}...HEAD" >> CHANGELOG.md
+          echo "[${{ steps.version.outputs.new_version }}]: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }}" >> CHANGELOG.md
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add runai-agent/pyproject.toml deploy/helm/runai-agent/Chart.yaml CHANGELOG.md
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git push
+
+      - name: Create Git tag
+        run: |
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.prepare-release.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.version }}
+          name: Release v${{ needs.prepare-release.outputs.version }}
+          body: |
+            # RunAI Agent v${{ needs.prepare-release.outputs.version }}
+            
+            ${{ needs.prepare-release.outputs.changelog }}
+            
+            ## Installation
+            
+            ### Docker
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:v${{ needs.prepare-release.outputs.version }}
+            ```
+            
+            ### Helm
+            ```bash
+            helm repo add runai-agent https://${{ github.repository_owner }}.github.io/runai-agent
+            helm repo update
+            helm install runai-agent runai-agent/runai-agent --version ${{ needs.prepare-release.outputs.version }}
+            ```
+            
+            ## What's Changed
+            
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/v${{ needs.prepare-release.outputs.version }}/CHANGELOG.md) for full details.
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  build-docker:
+    name: Build and Push Release Docker Image
+    needs: prepare-release
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
+
+  publish-helm:
+    name: Publish Helm Chart
+    needs: prepare-release
+    uses: ./.github/workflows/helm-publish.yml
+    secrets: inherit

@@ -141,8 +141,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: apps/runai-agent-test-frontend/package-lock.json
+          # Note: cache disabled due to subdirectory structure
+          # npm ci is fast enough without caching
 
       - name: Install frontend dependencies
         run: |
@@ -172,8 +172,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: runai-cli/package-lock.json
+          # Note: cache disabled due to subdirectory structure
+          # npm ci is fast enough without caching
 
       - name: Install CLI dependencies
         run: |

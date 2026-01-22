@@ -12,8 +12,8 @@ global:
 
 # Container image configuration
 image:
-  repository: your-registry/nat-agent-ui
-  tag: latest
+  repository: ghcr.io/runai-professional-services/runai-agent
+  tag: ""  # Defaults to Chart's appVersion if not specified
   pullPolicy: Always
 
 # Run:AI credentials

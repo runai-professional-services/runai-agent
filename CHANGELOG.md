@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.37] - 2026-01-23
+
+### Changed
+- Fix/workflow changelog (#25) (42c3f32)
+- fix: GitHub Actions workflows and release pipeline improvements (329e8ac)
+- build(deps-dev): bump prettier-plugin-tailwindcss (#17) (40fc75a)
+- build(deps): bump python from 3.11-slim to 3.14-slim in /deploy (#5) (f8aee45)
+- Feature/GitHub actions (#2) (5cb8227)
+- feat: enhance failure statistics and add job listing capability (a301263)
+- First Commit (1f4a509)
+- Initial commit (4ae5063)
+
+
 ### Added
 - CI/CD automation with GitHub Actions
 - Automated Docker image building and publishing
@@ -67,3 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.36...HEAD
 [0.1.36]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.36
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.37...HEAD
+[0.1.37]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.37

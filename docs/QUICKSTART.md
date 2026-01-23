@@ -30,7 +30,7 @@ docker run -p 8000:8000 \
   -e NVIDIA_API_KEY="$NVIDIA_API_KEY" \
   -e RUNAI_CLIENT_ID="$RUNAI_CLIENT_ID" \
   -e RUNAI_CLIENT_SECRET="$RUNAI_CLIENT_SECRET" \
-  your-registry/runai-agent:latest
+  ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Backend API:** http://localhost:8000/docs

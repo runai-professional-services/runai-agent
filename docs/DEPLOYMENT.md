@@ -13,6 +13,32 @@ Complete guide for deploying NAT Agent with Web UI to Docker, Kubernetes, and Ru
 
 ## Overview
 
+### 🎯 Recommended: Use Official Images
+
+**For most users, we recommend using the official pre-built images from GitHub Container Registry:**
+
+```bash
+# Pull the latest release
+docker pull ghcr.io/runai-professional-services/runai-agent:latest
+
+# Or a specific version
+docker pull ghcr.io/runai-professional-services/runai-agent:v0.1.37
+```
+
+**Benefits:**
+- ✅ Pre-built and tested
+- ✅ Automated security scanning
+- ✅ Multi-platform support (amd64, arm64)
+- ✅ Matches Helm chart versions
+
+**Skip to:** [Docker Deployment](#docker-deployment) or [Kubernetes Deployment](#kubernetes-deployment)
+
+---
+
+### Custom Builds (Advanced)
+
+The instructions below are for users who need to build custom images with modifications.
+
 ### Deployment Options
 
 1. **Helm Chart (Recommended)** - Production-ready deployment with monitoring, persistence, and RBAC

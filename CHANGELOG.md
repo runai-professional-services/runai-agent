@@ -78,8 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security**: Security improvements or fixes
 - **Infrastructure**: Deployment, CI/CD, or infrastructure changes
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.36...HEAD
 [0.1.36]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.36
+
 
 [Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.37...HEAD
 [0.1.37]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.37

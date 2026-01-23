@@ -46,7 +46,7 @@ spec:
       containers:
         # Main agent container
         - name: nat-agent
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           
           ports:
@@ -164,7 +164,7 @@ spec:
         {{- if .Values.monitoring.enabled }}
         # Monitoring sidecar container
         - name: monitor-sidecar
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           
           command:

@@ -7,7 +7,10 @@ on:
     paths-ignore:
       - 'docs/**'
       - '**.md'
-      - '.github/**'
+      - '.github/docs/**'
+      - '.github/workflows/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
   workflow_dispatch:
     inputs:
       version:
@@ -26,6 +29,9 @@ permissions:
   contents: write
   packages: write
   pull-requests: write
+  id-token: write          
+  security-events: write
+  pages: write
 
 jobs:
   # First, run tests to ensure everything passes

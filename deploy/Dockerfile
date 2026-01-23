@@ -29,7 +29,7 @@ RUN npm run build
 # ============================================
 # Stage 2: Python Backend + Runtime
 # ============================================
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -178,10 +178,13 @@ echo ""\n\
 \n\
 # Validate required environment variables\n\
 if [ -z "$NVIDIA_API_KEY" ]; then\n\
-    echo "❌ Error: NVIDIA_API_KEY environment variable is required"\n\
+    echo "⚠️  Warning: NVIDIA_API_KEY environment variable is not set"\n\
     echo ""\n\
     echo "Get your API key from: https://build.nvidia.com"\n\
-    exit 1\n\
+    echo ""\n\
+    echo "The agent will not be able to make LLM calls without a valid API key."\n\
+    echo "Services will start but functionality will be limited."\n\
+    echo ""\n\
 fi\n\
 \n\
 # Set defaults for optional variables\n\
@@ -190,7 +193,11 @@ export RUNAI_CLIENT_SECRET="${RUNAI_CLIENT_SECRET:-test}"\n\
 export RUNAI_BASE_URL="${RUNAI_BASE_URL:-https://test.run.ai}"\n\
 \n\
 echo "Configuration:"\n\
-echo "  NVIDIA_API_KEY: ${NVIDIA_API_KEY:0:20}..."\n\
+if [ -z "$NVIDIA_API_KEY" ]; then\n\
+    echo "  NVIDIA_API_KEY: ❌ NOT SET"\n\
+else\n\
+    echo "  NVIDIA_API_KEY: ${NVIDIA_API_KEY:0:20}..."\n\
+fi\n\
 echo "  RUNAI_CLIENT_ID: $RUNAI_CLIENT_ID"\n\
 echo "  RUNAI_BASE_URL: $RUNAI_BASE_URL"\n\
 echo ""\n\

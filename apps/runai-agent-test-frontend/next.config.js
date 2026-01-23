@@ -1,4 +1,11 @@
-const { configureRuntimeEnv } = require('next-runtime-env/build/configure');
+// Try to load next-runtime-env, but make it optional for build-time
+let configureRuntimeEnv;
+try {
+  configureRuntimeEnv = require('next-runtime-env/build/configure').configureRuntimeEnv;
+} catch (e) {
+  // Fallback if next-runtime-env is not available
+  configureRuntimeEnv = () => ({});
+}
 
 // Next.js is built WITH basePath at container startup
 // The basePath is determined from RUNAI_PROJECT and RUNAI_JOB_NAME environment variables

@@ -92,6 +92,7 @@ jobs:
 
       - name: Update version in Chart.yaml
         run: |
+          sed -i 's/^version: .*/version: ${{ steps.version.outputs.new_version }}/' deploy/helm/runai-agent/Chart.yaml
           sed -i 's/appVersion: ".*"/appVersion: "${{ steps.version.outputs.new_version }}"/' deploy/helm/runai-agent/Chart.yaml
 
       - name: Generate changelog

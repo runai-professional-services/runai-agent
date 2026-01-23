@@ -94,6 +94,50 @@ helm upgrade -i runai-agent ./deploy/helm/runai-agent \
   -f my-values.yaml
 ```
 
+## Installing from GitHub Packages
+
+The Run:AI Agent Helm chart and Docker images are published to GitHub Packages with each release.
+
+### Add Helm Repository
+
+```bash
+# Add the Helm repository
+helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
+
+# Update repository index
+helm repo update
+```
+
+### Install Latest Version
+
+```bash
+# Install from the published chart
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent \
+  --create-namespace \
+  --set runai.clientId="[YOUR_CLIENT_ID]" \
+  --set runai.clientSecret="[YOUR_CLIENT_SECRET]" \
+  --set runai.baseUrl="https://your-cluster.run.ai" \
+  --set nvidia.apiKey="[YOUR_NVIDIA_API_KEY]"
+```
+
+### Install Specific Version
+
+```bash
+# List available versions
+helm search repo runai-agent/runai-agent --versions
+
+# Install specific version
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --version 0.1.27 \
+  --namespace runai-agent \
+  --create-namespace \
+  --set runai.existingSecret="runai-creds" \
+  --set nvidia.existingSecret="nvidia-key"
+```
+
+**Note:** Docker images are automatically pulled from `ghcr.io/runai-professional-services/runai-agent` and versioned to match the chart release.
+
 ## Configuration
 
 ### Global Settings
@@ -107,9 +151,11 @@ helm upgrade -i runai-agent ./deploy/helm/runai-agent \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `image.repository` | Container image repository | `your-registry/nat-agent-ui` |
-| `image.tag` | Image tag | `latest` |
+| `image.repository` | Container image repository | `ghcr.io/runai-professional-services/runai-agent` |
+| `image.tag` | Image tag (defaults to Chart.appVersion if empty) | `""` |
 | `image.pullPolicy` | Image pull policy | `Always` |
+
+**Note:** The image tag defaults to the chart's `appVersion` (from `Chart.yaml`) when not specified. This ensures version-pinned deployments that match the chart version. Override with `--set image.tag=<version>` if you need a specific version.
 
 ### Run:AI Credentials
 
@@ -210,8 +256,8 @@ global:
   deploymentName: "runai-agent-prod"
 
 image:
-  repository: "my-registry.io/nat-agent-ui"
-  tag: "v0.1.27"
+  repository: "ghcr.io/runai-professional-services/runai-agent"
+  tag: ""  # Uses Chart.appVersion (recommended for version consistency)
   pullPolicy: IfNotPresent
 
 monitoring:

@@ -6,8 +6,8 @@ global:
   deploymentName: "runai-agent-dev"
 
 image:
-  repository: your-registry/nat-agent-ui
-  tag: latest
+  repository: ghcr.io/runai-professional-services/runai-agent
+  tag: ""  # Uses Chart.appVersion
   pullPolicy: Always
 
 # Use existing secrets (recommended)

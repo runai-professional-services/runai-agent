@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.38] - 2026-01-23
+
+### Changed
+- Fix/helm publish git config (#26) (5a58d43)
+
+
 ## [0.1.37] - 2026-01-23
 
 ### Changed
@@ -81,5 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.36]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.36
 
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.37...HEAD
 [0.1.37]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.37
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.38...HEAD
+[0.1.38]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.38

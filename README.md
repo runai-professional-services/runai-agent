@@ -130,7 +130,7 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
-  nat-agent-ui:latest
+  ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Access the UI:** http://localhost:3000
@@ -147,7 +147,7 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
   -e KUBECONFIG="/root/.kube/config" \
   -v "/path/to/your/kubeconfig.yaml:/root/.kube/config:ro" \
-  nat-agent-ui:latest
+  ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Example:**
@@ -161,7 +161,7 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e GITHUB_TOKEN="[YOUR_GITHUB_TOKEN]" \
   -e KUBECONFIG="/root/.kube/config" \
   -v "$HOME/.kube/config:/root/.kube/config:ro" \
-  your-registry/nat-agent-ui:latest
+  ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Important:**
@@ -1571,7 +1571,7 @@ By default, the agent provides clean, concise output. To see the agent's interna
 docker run -p 3000:3000 -p 8000:8000 \
   -e NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]" \
   -e NEXT_PUBLIC_ENABLE_INTERMEDIATE_STEPS=true \
-  your-registry/nat-agent-ui:latest
+  ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **For Helm Deployment:**

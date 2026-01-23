@@ -92,6 +92,7 @@ jobs:
 
       - name: Update version in Chart.yaml
         run: |
+          sed -i 's/^version: .*/version: ${{ steps.version.outputs.new_version }}/' deploy/helm/runai-agent/Chart.yaml
           sed -i 's/appVersion: ".*"/appVersion: "${{ steps.version.outputs.new_version }}"/' deploy/helm/runai-agent/Chart.yaml
 
       - name: Generate changelog
@@ -127,7 +128,12 @@ jobs:
           awk '/## \[Unreleased\]/ {print; print ""; system("cat /tmp/new_entry.txt"); next} 1' CHANGELOG.md > /tmp/CHANGELOG.md.new
           mv /tmp/CHANGELOG.md.new CHANGELOG.md
           
-          # Update comparison links
+          # Update comparison links at the end of file
+          # Remove any existing [Unreleased] and the new version link (if exists from previous runs)
+          sed -i '/^\[Unreleased\]:/d' CHANGELOG.md
+          sed -i "/^\[${{ steps.version.outputs.new_version }}\]:/d" CHANGELOG.md
+          
+          # Add updated links at the end
           echo "" >> CHANGELOG.md
           echo "[Unreleased]: https://github.com/${{ github.repository }}/compare/v${{ steps.version.outputs.new_version }}...HEAD" >> CHANGELOG.md
           echo "[${{ steps.version.outputs.new_version }}]: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }}" >> CHANGELOG.md

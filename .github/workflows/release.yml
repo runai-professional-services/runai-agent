@@ -118,10 +118,14 @@ jobs:
 
       - name: Update CHANGELOG.md
         run: |
-          # Insert new version after [Unreleased]
-          sed -i "/## \[Unreleased\]/a\\
-          \\
-          ${{ steps.changelog.outputs.changelog }}" CHANGELOG.md
+          # Create temporary files
+          cat > /tmp/new_entry.txt << 'EOF'
+          ${{ steps.changelog.outputs.changelog }}
+          EOF
+          
+          # Insert new version after [Unreleased] using awk
+          awk '/## \[Unreleased\]/ {print; print ""; system("cat /tmp/new_entry.txt"); next} 1' CHANGELOG.md > /tmp/CHANGELOG.md.new
+          mv /tmp/CHANGELOG.md.new CHANGELOG.md
           
           # Update comparison links
           echo "" >> CHANGELOG.md

@@ -203,4 +203,6 @@ jobs:
     name: Publish Helm Chart
     needs: prepare-release
     uses: ./.github/workflows/helm-publish.yml
+    with:
+      ref: v${{ needs.prepare-release.outputs.version }}
     secrets: inherit

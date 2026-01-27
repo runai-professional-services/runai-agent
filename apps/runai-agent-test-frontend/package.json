@@ -32,7 +32,7 @@
     "lucide-react": "^0.454.0",
     "next": "14.2.25",
     "next-auth": "^4.24.7",
-    "next-i18next": "^13.2.2",
+    "next-i18next": "^15.4.3",
     "pptxgenjs": "^3.12.0",
     "react": "^18.2.0",
     "react-bootstrap-modal": "^4.2.0",

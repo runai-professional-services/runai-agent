@@ -48,7 +48,7 @@
     "rehype-mathjax": "^4.0.2",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^3.0.1",
-    "remark-math": "^5.1.1",
+    "remark-math": "^6.0.0",
     "remark-unwrap-images": "^4.0.0",
     "uuid": "^9.0.1"
   },

@@ -4,8 +4,15 @@ updates:
   - package-ecosystem: "pip"
     directory: "/runai-agent"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"  # Changed from weekly
+    open-pull-requests-limit: 3  # Reduced from 5
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "python"
@@ -14,8 +21,15 @@ updates:
   - package-ecosystem: "npm"
     directory: "/apps/runai-agent-test-frontend"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"  # Changed from weekly
+    open-pull-requests-limit: 3  # Reduced from 5
+    groups:
+      frontend-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "frontend"
@@ -24,8 +38,15 @@ updates:
   - package-ecosystem: "npm"
     directory: "/runai-cli"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"  # Changed from weekly
+    open-pull-requests-limit: 3  # Reduced from 5
+    groups:
+      cli-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "cli"
@@ -34,7 +55,11 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"  # Changed from weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "github-actions"
@@ -43,7 +68,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/deploy"
     schedule:
-      interval: "weekly"
+      interval: "monthly"  # Changed from weekly
     labels:
       - "dependencies"
       - "docker"

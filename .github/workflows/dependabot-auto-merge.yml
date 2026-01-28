@@ -1,8 +1,11 @@
 name: Dependabot Auto-Merge
 
 on:
-  pull_request:
-    branches: [main]
+  # Temporarily disabled to reduce workflow runs
+  # Uncomment to re-enable
+  # pull_request:
+  #   branches: [main]
+  workflow_dispatch:  # Allow manual triggering
 
 permissions:
   contents: write

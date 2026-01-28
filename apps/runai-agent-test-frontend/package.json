@@ -49,7 +49,7 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^3.0.1",
     "remark-math": "^5.1.1",
-    "remark-unwrap-images": "^4.0.0",
+    "remark-unwrap-images": "^5.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

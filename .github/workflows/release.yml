@@ -176,7 +176,7 @@ jobs:
             
             ### Docker
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:v${{ needs.prepare-release.outputs.version }}
+            docker pull ghcr.io/${{ github.repository }}:${{ needs.prepare-release.outputs.version }}
             ```
             
             ### Helm

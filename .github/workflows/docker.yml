@@ -71,6 +71,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get version from Chart.yaml
+        id: chart_version
+        run: |
+          VERSION=$(grep 'appVersion:' deploy/helm/runai-agent/Chart.yaml | sed 's/appVersion: "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Chart appVersion: $VERSION"
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -84,6 +91,7 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.chart_version.outputs.version }},enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -107,6 +115,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.chart_version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms:** \`${{ github.event.inputs.platforms || env.DEFAULT_PLATFORMS }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Tags" >> $GITHUB_STEP_SUMMARY
@@ -114,9 +123,13 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull latest" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull specific version (for Helm)" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.chart_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   security-scan:

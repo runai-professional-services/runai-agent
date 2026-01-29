@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.40] - 2026-01-29
+
+### Changed
+- Fix/helm image (#60) (987124d)
+
+
 ## [0.1.39] - 2026-01-29
 
 ### Changed
@@ -105,5 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.38]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.38
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.39...HEAD
 [0.1.39]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.39
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.40...HEAD
+[0.1.40]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.40

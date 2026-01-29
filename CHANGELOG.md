@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.39] - 2026-01-29
+
+### Changed
+- fix: reduce Dependabot noise and workflow runs (#42) (6af834f)
+- build(deps): bump actions/setup-node from 4 to 6 (#34) (623d3db)
+- build(deps): bump next-i18next in /apps/runai-agent-test-frontend (#33) (59e502e)
+- build(deps): bump actions/stale from 9 to 10 (#31) (0a75d72)
+- build(deps): bump actions/upload-artifact from 4 to 6 (#29) (0acb6b9)
+- build(deps): bump github/codeql-action from 3 to 4 (#28) (99699ae)
+- build(deps): bump axios from 1.13.2 to 1.13.3 in /runai-cli (#38) (a5f2039)
+- build(deps): bump python from 3.12-slim to 3.14-slim in /deploy (#30) (212e9af)
+- fix: Ensure Helm chart publishes with correct version (#27) (fc9efcf)
+
+
 ## [0.1.38] - 2026-01-23
 
 ### Changed
@@ -89,5 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.37]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.37
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.38...HEAD
 [0.1.38]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.38
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.39...HEAD
+[0.1.39]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.39

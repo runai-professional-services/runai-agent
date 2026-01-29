@@ -2,8 +2,8 @@ apiVersion: v2
 name: runai-agent
 description: Intelligent conversational agent for Run:AI cluster management with advanced failure analysis
 type: application
-version: 0.1.38
-appVersion: "0.1.38"
+version: 0.1.39
+appVersion: "0.1.39"
 keywords:
   - runai
   - ai

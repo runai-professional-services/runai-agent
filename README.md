@@ -1620,12 +1620,22 @@ This project uses GitHub Actions for automated testing, building, and deployment
 - **Automated Builds**: On every push to `main` and version tags
 - **Registry**: GitHub Container Registry (ghcr.io)
 - **Multi-platform**: linux/amd64, linux/arm64
-- **Tags**: `latest`, `v*.*.*`, `main-sha`
+- **Tags**: `latest`, `0.1.39`, `main-sha`
 
 **Pull the latest image:**
 ```bash
 docker pull ghcr.io/runai-professional-services/runai-agent:latest
 ```
+
+**Pull a specific version (recommended for production):**
+```bash
+docker pull ghcr.io/runai-professional-services/runai-agent:0.1.39
+```
+
+**Version Convention:**
+- Git tags: `v0.1.39` (with 'v' prefix)
+- Docker image tags: `0.1.39`, `latest` (no 'v' prefix)
+- Helm chart versions: `0.1.39` (no 'v' prefix)
 
 #### 🚀 Releases
 - **Automated Releases**: Triggered on merge to `main`
@@ -1650,6 +1660,8 @@ helm repo add runai-agent https://runai-professional-services.github.io/runai-ag
 helm repo update
 helm install runai-agent runai-agent/runai-agent
 ```
+
+**Note:** The Helm chart's `appVersion` field automatically references the correct Docker image tag, ensuring version consistency between the chart and the container image.
 
 #### 🔍 PR Validation
 Every pull request is automatically validated:

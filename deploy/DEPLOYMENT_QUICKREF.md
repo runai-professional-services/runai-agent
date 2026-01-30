@@ -96,7 +96,7 @@ export RUNAI_BASE_URL="https://your-cluster.run.ai"
 # Build
 ./deploy/build-docker.sh
 
-# Run
+# Run (latest)
 docker run -p 3000:3000 -p 8000:8000 \
   -e NVIDIA_API_KEY="$NVIDIA_API_KEY" \
   -e RUNAI_CLIENT_ID="$RUNAI_CLIENT_ID" \
@@ -104,8 +104,20 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_BASE_URL="$RUNAI_BASE_URL" \
   ghcr.io/runai-professional-services/runai-agent:latest
 
+# Or use specific version (recommended for production)
+docker run -p 3000:3000 -p 8000:8000 \
+  -e NVIDIA_API_KEY="$NVIDIA_API_KEY" \
+  -e RUNAI_CLIENT_ID="$RUNAI_CLIENT_ID" \
+  -e RUNAI_CLIENT_SECRET="$RUNAI_CLIENT_SECRET" \
+  -e RUNAI_BASE_URL="$RUNAI_BASE_URL" \
+  ghcr.io/runai-professional-services/runai-agent:0.1.39
+
 # Access: http://localhost:3000
 ```
+
+**Image Tags:**
+- `latest` - Most recent build from main branch
+- `0.1.39` - Specific release version (matches Helm chart)
 
 **Documentation:** [README.md](../README.md#docker-deployment)
 

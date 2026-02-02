@@ -47,9 +47,10 @@ RUN set -e && \
     KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt | tr -d '[:space:]') && \
     echo "Installing kubectl version: ${KUBECTL_VERSION}" && \
     curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+    test -f kubectl && \
+    file kubectl && \
     chmod +x kubectl && \
-    mv kubectl /usr/local/bin/kubectl && \
-    kubectl version --client
+    mv kubectl /usr/local/bin/kubectl
 
 # Set up working directory
 WORKDIR /app

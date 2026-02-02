@@ -43,10 +43,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl for Run:AI job status checks
-RUN KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt | xargs) && \
+RUN set -e && \
+    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt | tr -d '[:space:]') && \
+    echo "Installing kubectl version: ${KUBECTL_VERSION}" && \
     curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
     chmod +x kubectl && \
-    mv kubectl /usr/local/bin/kubectl
+    mv kubectl /usr/local/bin/kubectl && \
+    kubectl version --client
 
 # Set up working directory
 WORKDIR /app

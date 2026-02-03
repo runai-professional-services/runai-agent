@@ -1,4 +1,5 @@
 name: Build and Push Docker Image
+# Force rebuild to pick up version 0.1.42
 
 on:
   push:

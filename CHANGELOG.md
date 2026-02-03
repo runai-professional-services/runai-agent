@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.42] - 2026-02-03
+
+### Changed
+- fix: make kubectl installation more robust for docker/build-push-acti… (#68) (5787a65)
+- build(deps): bump the github-actions group with 5 updates (#64) (cd91f04)
+
+
 ## [0.1.41] - 2026-01-31
 
 ### Changed
@@ -121,5 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.40]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.40
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.41...HEAD
 [0.1.41]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.41
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.42...HEAD
+[0.1.42]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.42

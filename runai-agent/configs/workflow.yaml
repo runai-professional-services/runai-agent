@@ -98,6 +98,12 @@ functions:
     pattern_threshold: 3  # Minimum occurrences to identify a pattern
     enable_auto_remediation: false  # Enable automatic remediation (with confirmation)
 
+  runai_job_analytics:
+    _type: runai_job_analytics
+    description: "Job performance analytics: execution time trends, failure rates by project/image, recommendations (typical job duration), and anomaly detection (jobs running 3x longer than usual). Use for 'how long do my jobs take', 'failure rate by project', 'any jobs running too long'."
+    db_path: "${RUNAI_FAILURE_DB_PATH:-/tmp/runai_failure_history.db}"
+    lookback_days: 7
+
   runai_template_executor:
     _type: runai_template_executor
     description: |
@@ -180,6 +186,7 @@ workflow:
     - runai_manage_workload
     - runai_proactive_monitor
     - runai_failure_analyzer
+    - runai_job_analytics
     - runai_template_executor
     - runai_kubectl_troubleshoot
     - runailabs_job_generator
@@ -232,6 +239,7 @@ workflow:
     - runai_manage_workload: 🎯 **Unified lifecycle management** (suspend, resume, delete any workload type)
     - runai_proactive_monitor: 🔔 **Proactive monitoring & auto-troubleshooting** (continuously monitor jobs and alert on failures)
     - runai_failure_analyzer: 🔬 **Advanced failure analysis** (pattern recognition, cross-job correlation, automated remediation)
+    - runai_job_analytics: 📊 **Job performance analytics** (execution time trends, failure rates, recommendations, anomaly detection)
     - runai_template_executor: ⚡ **Template-Based API Executor** (NFS, PVC, Git, S3 datasources & Projects - fast, deterministic operations)
     - runai_kubectl_troubleshoot: 🆕 **Deep troubleshooting** (logs, events, diagnosis)
     - runailabs_job_generator: Generate job submission code (fetches real examples from GitHub)
@@ -244,6 +252,9 @@ workflow:
     - "What does Y mean in Run:AI?"
     - Any general Run:AI product questions
     → Use runai_docs_search to get answers from official documentation
+    
+    **Job analytics & monitoring follow-up:**
+    If you just showed job performance analytics with "no data" and the user says "yes", "help me set that up", "set up monitoring", or similar, they mean: start proactive monitoring. Call runai_proactive_monitor with action="start".
     
     **🎯 DATASOURCE & PROJECT OPERATIONS - STRICT ROUTING RULES:**
     

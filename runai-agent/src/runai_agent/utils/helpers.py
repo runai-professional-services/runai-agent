@@ -6,7 +6,7 @@ import asyncio
 import subprocess
 import aiohttp
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +59,26 @@ def _get_secure_runai_config():
         'RUNAI_CLIENT_SECRET': os.environ.get('RUNAI_CLIENT_SECRET', ''),
         'RUNAI_BASE_URL': os.environ.get('RUNAI_BASE_URL', ''),
     }
+
+
+def _coerce_optional_int(value: Optional[Union[int, str]], default: int) -> int:
+    """Coerce LLM tool input to int; treat None/'None'/empty as missing and return default."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "")):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _normalize_optional_str_none(value: Optional[Any]) -> Optional[str]:
+    """Treat string 'None' or empty as None; otherwise return value as str (for project, etc.)."""
+    if value is None:
+        return None
+    s = str(value).strip().lower()
+    if s in ("none", ""):
+        return None
+    return str(value).strip()
 
 
 def _search_workload_by_name_helper(client, job_name_to_search: str, project_id: str = None, cluster_id: str = None):

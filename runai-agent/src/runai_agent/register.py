@@ -14,6 +14,7 @@ from runai_agent.functions import (
     runai_manage_workload,
     runai_proactive_monitor,
     runai_failure_analyzer,
+    runai_job_analytics,
     runai_template_executor,
 )
 

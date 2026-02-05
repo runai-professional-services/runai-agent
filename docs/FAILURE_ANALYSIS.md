@@ -32,6 +32,9 @@ The failure analyzer continuously learns from every failure in your cluster, bui
 - Builds institutional knowledge over time
 - Survives restarts and updates
 
+### 5. **Related: Job Performance Analytics**
+The same database is used for **job performance analytics**. Ask the agent for execution time trends, failure rates by project/image, recommendations (e.g. typical job duration), and anomaly detection (jobs running 3× longer than usual). Example: *"How long do my training jobs usually take?"* or *"Any jobs running longer than usual?"* Run history is populated when proactive monitoring is enabled.
+
 ## 🚀 Usage
 
 ### Analyze Failure Patterns

@@ -161,6 +161,33 @@ functions:
     embedder_name: nv-embedqa-e5-v5
     chunk_size: 4096  # Larger chunks for detailed API documentation with full examples
 
+  runai_nim_benchmark:
+    _type: runai_nim_benchmark
+    description: |
+      🚀 **NVIDIA NIM LLM Benchmark Tool**
+      
+      Run GPU benchmarks using NVIDIA NIM inference + genai-perf.
+      
+      ✅ USE THIS TOOL WHEN user mentions:
+      - "benchmark", "run benchmark", "NIM benchmark", "LLM benchmark"
+      - "throughput test", "latency test", "concurrency test", "scaling test"
+      - "GPU performance", "benchmark on H100/H200/A100"
+      - "test GPU performance", "measure inference speed"
+      
+      **Parameters (all optional – safe defaults applied):**
+      - gpu_type: h100 | h200 | a100 (default: h100)
+      - scenario: throughput | latency | concurrency | scaling (default: throughput)
+      - model: Model ID (default: meta/llama-3.1-8b-instruct)
+      - project: Run:AI project (default: first available)
+      - gpu_count: Number of GPUs (default: 1)
+      - dry_run: Preview before submitting (default: true)
+      - confirmed: Set true after user confirms (default: false)
+    dry_run_default: true
+    require_confirmation: true
+    default_gpu_type: "h100"
+    default_scenario: "throughput"
+    max_gpus: 8
+
 embedders:
   nv-embedqa-e5-v5:
     _type: nim
@@ -190,6 +217,7 @@ workflow:
     - runai_template_executor
     - runai_kubectl_troubleshoot
     - runailabs_job_generator
+    - runai_nim_benchmark  # NIM LLM benchmarking (H100, H200, A100)
     - runai_docs_helper  # NEW: Direct links to known topics (fast, reliable)
     - runai_docs_search  # Semantic search (slower, may miss pages)
     - runai_api_docs
@@ -243,6 +271,7 @@ workflow:
     - runai_template_executor: ⚡ **Template-Based API Executor** (NFS, PVC, Git, S3 datasources & Projects - fast, deterministic operations)
     - runai_kubectl_troubleshoot: 🆕 **Deep troubleshooting** (logs, events, diagnosis)
     - runailabs_job_generator: Generate job submission code (fetches real examples from GitHub)
+    - runai_nim_benchmark: 🚀 **NIM LLM Benchmarking** (run GPU benchmarks on H100, H200, A100 with genai-perf)
     - runai_docs_search: 📚 **Search Run:AI documentation** (answers product questions from official docs)
     
     **📊 JOB PERFORMANCE ANALYTICS - USE runai_job_analytics:**
@@ -252,6 +281,51 @@ workflow:
     - "Failure rate by project" / "failure rates" / "job analytics"
     - "Jobs running too long" / "anomaly" / "jobs taking longer than usual"
     → Call runai_job_analytics. If the user does not specify project or time period, use defaults (last 7 days, all projects)—do NOT ask them to specify; call the tool and return the report.
+    
+    **🚀 NIM LLM BENCHMARK - USE runai_nim_benchmark:**
+    When the user asks for any of the following, ALWAYS call runai_nim_benchmark:
+    - "benchmark", "run benchmark", "NIM benchmark", "LLM benchmark"
+    - "throughput test", "latency test", "concurrency test", "scaling test"
+    - "benchmark on H100", "benchmark on H200", "benchmark on A100"
+    - "GPU performance test", "measure inference speed", "test NIM"
+    - "run throughput benchmark on H100", "benchmark latency on A100"
+    - "run concurrency benchmark on H200 using the default model"
+    
+    **Parameter extraction from natural language:**
+    - GPU type: Look for "H100", "H200", "A100" in the user message → gpu_type
+    - Scenario: Look for "throughput", "latency", "concurrency", "scaling" → scenario
+    - Model: Look for model names like "llama", "mistral", etc. → model
+    - Project: Look for "project X" or "in project X" → project
+    - GPU count: Look for "2 GPUs", "4 GPUs" → gpu_count
+    
+    **Safe defaults (applied when parameter is missing):**
+    - gpu_type: "h100" (most common)
+    - scenario: "throughput" (most useful first benchmark)
+    - model: "meta/llama-3.1-8b-instruct" (optimised for all GPU types)
+    - gpu_count: 1
+    - project: first available project (or RUNAI_BENCHMARK_PROJECT env var)
+    
+    **IMPORTANT:** Do NOT stop or ask the user if gpu_type or scenario is missing—apply the defaults above and proceed.
+    
+    **Benchmark confirmation workflow (same as job submission):**
+    Step 1: Call with default dry_run=true → shows preview
+    Step 2: Show preview to user, ask "Shall I submit this benchmark?"
+    Step 3: After user confirms → call again with dry_run=false, confirmed=true
+    
+    **Example:**
+    User: "Run NIM throughput benchmark on H100"
+    Thought: User wants a NIM benchmark. GPU=h100, scenario=throughput.
+    Action: runai_nim_benchmark
+    Action Input: {"gpu_type": "h100", "scenario": "throughput"}
+    Observation: [preview of benchmark spec]
+    Thought: I should show the preview and ask for confirmation.
+    Final Answer: Here's the benchmark spec: [preview]. Shall I submit it?
+    
+    User: "Yes"
+    Thought: User confirmed. Submit the benchmark.
+    Action: runai_nim_benchmark
+    Action Input: {"gpu_type": "h100", "scenario": "throughput", "dry_run": false, "confirmed": true}
+    Observation: [job submitted successfully]
     
     **Documentation Search:**
     When user asks questions about Run:AI features, concepts, or usage (but NOT job performance analytics - use runai_job_analytics for that):

@@ -14,6 +14,7 @@ from .proactive_monitor import RunaiProactiveMonitorConfig, runai_proactive_moni
 from .failure_analyzer import FailureAnalyzerConfig, runai_failure_analyzer
 from .job_analytics import JobAnalyticsConfig, runai_job_analytics
 from .runai_docs_helper import RunaiDocsHelperConfig, runai_docs_helper
+from .nim_benchmark import RunaiNimBenchmarkConfig, runai_nim_benchmark
 
 __all__ = [
     'RunailabsEnvironmentConfig',
@@ -44,5 +45,7 @@ __all__ = [
     'runai_job_analytics',
     'RunaiDocsHelperConfig',
     'runai_docs_helper',
+    'RunaiNimBenchmarkConfig',
+    'runai_nim_benchmark',
 ]
 

@@ -9,6 +9,10 @@ Usage:
     python monitor_sidecar.py [--poll-interval 60] [--project PROJECT]
 """
 
+# Suppress SyntaxWarnings from Run:AI SDK docstrings (invalid escape sequences in Python 3.13+)
+import warnings
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="runai")
+
 import os
 import sys
 import asyncio
@@ -19,7 +23,14 @@ from datetime import datetime
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from runai_agent.utils import logger
+from runai_agent.utils import logger, _workload_image
+
+# Phases that indicate a job has finished (success or failure). Recording these to job_run_history
+# enables job performance analytics in Kubernetes without requiring "Start proactive monitoring" in chat.
+TERMINAL_PHASES = {
+    'Succeeded', 'Failed', 'Error', 'Completed',
+    'OOMKilled', 'ImagePullBackOff', 'CrashLoopBackOff',
+}
 
 
 class MonitoringSidecar:
@@ -67,6 +78,30 @@ class MonitoringSidecar:
             logger.error(f"Error fetching workloads: {e}")
             return []
     
+    def _record_job_run_to_history(self, workload, db):
+        """Record a completed job (any terminal phase) to job_run_history for performance analytics."""
+        job_id = workload.get('id') or workload.get('name', '')
+        if not job_id:
+            return
+        phase = workload.get('phase', workload.get('actualPhase', 'Unknown'))
+        ended_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        started_at = workload.get('createdAt')
+        image = _workload_image(workload)
+        gpu_count = workload.get('requestedGPUs', workload.get('gpuRequestedGPUs', workload.get('gpuCount')))
+        try:
+            db.record_job_run(
+                job_id=str(job_id),
+                job_name=workload.get('name', 'unknown'),
+                project=workload.get('projectName', workload.get('project', 'unknown')),
+                status=phase,
+                ended_at=ended_at,
+                started_at=started_at,
+                image=image,
+                gpu_count=int(gpu_count) if gpu_count is not None else None,
+            )
+        except Exception as e:
+            logger.debug(f"Could not record job run history: {e}")
+
     async def _check_workload(self, workload, client, db):
         """Check a workload for failures and record them"""
         try:
@@ -90,7 +125,7 @@ class MonitoringSidecar:
             
             # Extract node and image for correlation tracking
             node_name = workload.get('nodeName', workload.get('node', 'unknown'))
-            container_image = workload.get('image', 'unknown')
+            container_image = _workload_image(workload) or 'unknown'
             gpu_count = workload.get('gpuRequestedGPUs', workload.get('gpuCount', 0))
             
             # Record failure to database (use correct field names matching schema)
@@ -190,10 +225,14 @@ class MonitoringSidecar:
                         logger.info("   No workloads found")
                     else:
                         logger.info(f"   Found {len(workloads)} workload(s)")
-                        
-                        # Check each workload for failures
                         for workload in workloads:
-                            await self._check_workload(workload, client, db)
+                            phase = workload.get('phase', workload.get('actualPhase', 'Unknown'))
+                            # Record all terminal phases to job_run_history (for job performance analytics)
+                            if phase in TERMINAL_PHASES:
+                                self._record_job_run_to_history(workload, db)
+                            # Record failures to failure_events and run auto-troubleshoot
+                            if phase in ['Failed', 'Error', 'ImagePullBackOff', 'CrashLoopBackOff', 'OOMKilled']:
+                                await self._check_workload(workload, client, db)
                 
                 except asyncio.CancelledError:
                     logger.info("Monitoring cancelled")

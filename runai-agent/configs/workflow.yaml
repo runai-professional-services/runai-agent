@@ -100,7 +100,7 @@ functions:
 
   runai_job_analytics:
     _type: runai_job_analytics
-    description: "Job performance analytics: execution time trends, failure rates by project/image, recommendations (typical job duration), and anomaly detection (jobs running 3x longer than usual). Use for 'how long do my jobs take', 'failure rate by project', 'any jobs running too long'."
+    description: "THE tool for 'Show me job performance analytics' and similar. Reports execution time trends, failure rates by project/image, recommendations, and anomaly detection (jobs running 3x longer than usual). Always use this when the user asks for job performance analytics, execution trends, how long jobs take, or failure rates."
     db_path: "${RUNAI_FAILURE_DB_PATH:-/tmp/runai_failure_history.db}"
     lookback_days: 7
 
@@ -245,8 +245,16 @@ workflow:
     - runailabs_job_generator: Generate job submission code (fetches real examples from GitHub)
     - runai_docs_search: 📚 **Search Run:AI documentation** (answers product questions from official docs)
     
+    **📊 JOB PERFORMANCE ANALYTICS - USE runai_job_analytics:**
+    When the user asks for any of the following, ALWAYS call runai_job_analytics (do NOT answer from docs or say Run:AI doesn't have this):
+    - "Show me job performance analytics" / "job performance analytics" / "performance analytics"
+    - "Execution trends" / "how long do my jobs take" / "job duration" / "average job time"
+    - "Failure rate by project" / "failure rates" / "job analytics"
+    - "Jobs running too long" / "anomaly" / "jobs taking longer than usual"
+    → Call runai_job_analytics. If the user does not specify project or time period, use defaults (last 7 days, all projects)—do NOT ask them to specify; call the tool and return the report.
+    
     **Documentation Search:**
-    When user asks questions about Run:AI features, concepts, or usage:
+    When user asks questions about Run:AI features, concepts, or usage (but NOT job performance analytics - use runai_job_analytics for that):
     - "What is a nodePool?"
     - "How do I configure X?"
     - "What does Y mean in Run:AI?"

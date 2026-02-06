@@ -81,6 +81,30 @@ def _normalize_optional_str_none(value: Optional[Any]) -> Optional[str]:
     return str(value).strip()
 
 
+def _workload_image(workload: Optional[Dict]) -> Optional[str]:
+    """Extract container image from a Run:AI workload dict (list API may use top-level or nested spec/template)."""
+    if not workload or not isinstance(workload, dict):
+        return None
+    img = workload.get("image") or workload.get("containerImage")
+    if img:
+        return str(img).strip() or None
+    spec = workload.get("spec")
+    if isinstance(spec, dict):
+        img = spec.get("image")
+        if img:
+            return str(img).strip() or None
+        template = spec.get("template")
+        if isinstance(template, dict):
+            tspec = template.get("spec")
+            if isinstance(tspec, dict):
+                containers = tspec.get("containers") or []
+                if containers and isinstance(containers, list) and len(containers) > 0:
+                    c = containers[0] if isinstance(containers[0], dict) else None
+                    if c and c.get("image"):
+                        return str(c["image"]).strip()
+    return None
+
+
 def _search_workload_by_name_helper(client, job_name_to_search: str, project_id: str = None, cluster_id: str = None):
     """
     Shared helper function to search for workload by name using kubectl or Run:AI API.

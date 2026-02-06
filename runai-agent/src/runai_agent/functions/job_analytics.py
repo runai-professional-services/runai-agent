@@ -16,7 +16,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import _get_secure_runai_config, _coerce_optional_int, _normalize_optional_str_none, logger
+from ..utils import _get_secure_runai_config, _coerce_optional_int, _normalize_optional_str_none, _workload_image, logger
 
 
 class JobAnalyticsConfig(FunctionBaseConfig, name="runai_job_analytics"):
@@ -80,8 +80,8 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
             sections.append(
                 "## 📈 Execution time trends\n\n"
                 "No run history with duration yet.\n\n"
-                "**To start collecting data:** Ask me to **\"Start monitoring all jobs\"** (or \"Start proactive monitoring\"). "
-                "I will poll your workloads and record completions; after that, job performance analytics will show trends."
+                "**How data is collected:** In Kubernetes, the monitoring sidecar records job completions automatically. "
+                "Otherwise, say **\"Start monitoring all jobs\"** in chat to record completions. Trends will appear once data is recorded."
             )
         else:
             lines = [
@@ -126,7 +126,7 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                 for proj, avg_sec in sorted(agg["by_project"].items(), key=lambda x: -x[1])[:3]:
                     recs.append(f"- **{proj}**: Training jobs typically take ~{_format_duration(avg_sec)} — schedule accordingly.")
             if not recs:
-                recs.append("- Say **\"Start monitoring all jobs\"** to begin recording job completions for future analytics.")
+                recs.append("- Execution trends appear once completions are recorded (by the monitoring sidecar in Kubernetes or by saying **\"Start monitoring all jobs\"** in chat).")
             sections.append("## 💡 Recommendations\n\n" + "\n".join(recs))
 
             # 4. Anomaly: running jobs taking much longer than usual (with timeout so request cannot hang)
@@ -163,7 +163,7 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                             elapsed = int((now - created_dt).total_seconds())
                         except (ValueError, TypeError):
                             continue
-                        img = w.get("image") or w.get("containerImage") or "unknown"
+                        img = _workload_image(w) or "unknown"
                         avg_sec = by_image.get(img) or agg.get("avg_duration_seconds") or 3600
                         if avg_sec and elapsed > 3 * avg_sec:
                             anomalies.append(

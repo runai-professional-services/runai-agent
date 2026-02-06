@@ -16,7 +16,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import _get_secure_runai_config, _coerce_optional_int, logger
+from ..utils import _get_secure_runai_config, _coerce_optional_int, _workload_image, logger
 
 
 class RunaiProactiveMonitorConfig(FunctionBaseConfig, name="runai_proactive_monitor"):
@@ -375,7 +375,7 @@ pip install runai-sdk
         if pod_info and pod_info.get("container_image"):
             image = pod_info["container_image"]
         else:
-            image = workload.get("image") or workload.get("containerImage")
+            image = _workload_image(workload)
         ended_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
         started_at = workload.get("createdAt")
         db.record_job_run(

@@ -9,14 +9,14 @@ import os
 import asyncio
 import aiohttp
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Union
 from pydantic import Field
 from nat.builder.builder import Builder
 from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import _get_secure_runai_config, logger
+from ..utils import _get_secure_runai_config, _coerce_optional_int, _workload_image, logger
 
 
 class RunaiProactiveMonitorConfig(FunctionBaseConfig, name="runai_proactive_monitor"):
@@ -99,7 +99,7 @@ async def runai_proactive_monitor(config: RunaiProactiveMonitorConfig, builder: 
     async def _monitor_fn(
         action: str = "start",
         project: Optional[str] = None,
-        duration_minutes: int = 0
+        duration_minutes: Union[int, str] = 0
     ) -> str:
         """
         Start or check status of proactive monitoring
@@ -112,7 +112,8 @@ async def runai_proactive_monitor(config: RunaiProactiveMonitorConfig, builder: 
         Returns:
             Status message or monitoring report
         """
-        
+        duration_minutes = _coerce_optional_int(duration_minutes, 0)
+
         if action == "status":
             return f"""
 📊 **Monitoring Status**
@@ -128,13 +129,16 @@ async def runai_proactive_monitor(config: RunaiProactiveMonitorConfig, builder: 
 """
         
         if action == "start":
-            return await _start_monitoring(project, duration_minutes)
+            # Default 1 minute when no duration given so the request returns before typical CLI timeout
+            run_minutes = duration_minutes if duration_minutes > 0 else 1
+            return await _start_monitoring(project, run_minutes, defaulted=(duration_minutes == 0))
         
         return f"❌ Invalid action '{action}'. Use 'start' or 'status'."
     
     async def _start_monitoring(
         project_filter: Optional[str],
-        duration_minutes: int
+        duration_minutes: int,
+        defaulted: bool = False
     ) -> str:
         """Start the monitoring loop"""
         
@@ -153,7 +157,7 @@ pip install runai-sdk
         logger.info(f"🚀 Starting proactive monitoring...")
         logger.info(f"   Projects: {project_filter or 'ALL'}")
         logger.info(f"   Poll interval: {config.poll_interval_seconds}s")
-        logger.info(f"   Duration: {duration_minutes}m" if duration_minutes else "   Duration: Continuous")
+        logger.info(f"   Duration: {duration_minutes}m" + (" (default for chat/CLI)" if defaulted else ""))
         
         start_time = datetime.now()
         check_count = 0
@@ -202,7 +206,7 @@ pip install runai-sdk
                 # Sleep until next check
                 await asyncio.sleep(config.poll_interval_seconds)
             
-            return f"""
+            msg = f"""
 ✅ **Monitoring Session Complete**
 
 **Duration:** {(datetime.now() - start_time).total_seconds() / 60:.1f} minutes
@@ -210,6 +214,9 @@ pip install runai-sdk
 **Failures Detected:** {failures_detected}
 **Jobs Alerted:** {len(_alerted_jobs)}
 """
+            if defaulted:
+                msg += "\n**Tip:** For longer monitoring without timeouts, say e.g. \"Monitor for 30 minutes\" or use the sidecar when deployed (see README).\n"
+            return msg
         
         except Exception as e:
             logger.error(f"Monitoring error: {e}")
@@ -291,6 +298,7 @@ pip install runai-sdk
         # Detect failures - Only detect actual failure states reported by Run:AI API
         # Valid failure phases: Failed, Error, ImagePullBackOff, CrashLoopBackOff, OOMKilled
         is_failure = phase in ["Failed", "Error", "ImagePullBackOff", "CrashLoopBackOff", "OOMKilled"]
+        _TERMINAL_PHASES = {"Succeeded", "Failed", "Error", "Completed", "OOMKilled", "ImagePullBackOff", "CrashLoopBackOff"}
         
         if is_failure:
             logger.warning(f"🔴 FAILURE DETECTED: {job_name} in {job_project} - Phase: {phase}")
@@ -319,6 +327,13 @@ pip install runai-sdk
                     logger.error(f"Auto-troubleshoot failed: {e}")
                     troubleshoot_report = f"⚠️ Auto-troubleshoot error: {str(e)}"
             
+            # Record job run to history (for performance analytics)
+            if phase in _TERMINAL_PHASES:
+                try:
+                    await _record_job_run_to_history(workload, pod_info)
+                except Exception as e:
+                    logger.debug(f"Could not record job run history: {e}")
+            
             # Record failure to database for pattern analysis
             try:
                 await _record_failure_to_db(
@@ -341,6 +356,38 @@ pip install runai-sdk
                 job_uuid=job_uuid,
                 troubleshoot_report=troubleshoot_report
             )
+        elif phase in _TERMINAL_PHASES:
+            # Record successful completion to run history (for performance analytics)
+            try:
+                await _record_job_run_to_history(workload, None)
+            except Exception as e:
+                logger.debug(f"Could not record job run history: {e}")
+    
+    async def _record_job_run_to_history(workload: Dict[str, Any], pod_info: Optional[Dict[str, Any]]):
+        """Record completed job (success or failure) to job_run_history for analytics."""
+        from .failure_analyzer import FailureDatabase
+        job_id = workload.get("id") or workload.get("name", "")
+        if not job_id:
+            return
+        db_path = os.environ.get("RUNAI_FAILURE_DB_PATH", "/tmp/runai_failure_history.db")
+        db = FailureDatabase(db_path)
+        image = None
+        if pod_info and pod_info.get("container_image"):
+            image = pod_info["container_image"]
+        else:
+            image = _workload_image(workload)
+        ended_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        started_at = workload.get("createdAt")
+        db.record_job_run(
+            job_id=str(job_id),
+            job_name=workload.get("name", "unknown"),
+            project=workload.get("projectName", "unknown"),
+            status=workload.get("phase", workload.get("actualPhase", "Unknown")),
+            ended_at=ended_at,
+            started_at=started_at,
+            image=image,
+            gpu_count=workload.get("requestedGPUs"),
+        )
     
     async def _auto_troubleshoot(
         job_name: str,

@@ -20,6 +20,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [🔄 Job Lifecycle Management](#-job-lifecycle-management)
 - [🔔 Proactive Monitoring & Auto-Troubleshooting](#-proactive-monitoring--auto-troubleshooting)
 - [🔬 Advanced Failure Analysis](#-advanced-failure-analysis)
+- [📊 Job Performance Analytics](#-job-performance-analytics)
 - [🧠 REST API Executor (Datasource Management)](#-rest-api-executor-datasource-management)
 - [🏗️ Architecture](#️-architecture)
 - [🔧 Configuration](#-configuration)
@@ -41,6 +42,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - 🔄 **Unified Lifecycle Management** - Suspend, resume, and delete any workload type with one tool
 - 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with Slack alerts
 - 🔬 **Advanced Failure Analysis** - Pattern recognition, cross-job correlation, and automated remediation suggestions
+- 📊 **Job Performance Analytics** - Execution time trends, failure rates by project/image, recommendations, anomaly detection
 - 🗑️ **Two-Step Confirmation** - Safe deletion with explicit user confirmation
 - ⚡ **Template-Based API Executor** - Fast, deterministic datasource management (NFS, PVC, Git, S3 with CRUD operations) - 20-50x faster than LLM
 - 🔍 **Job Status & Troubleshooting** - Check job status and get detailed kubectl diagnostics
@@ -130,10 +132,26 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
+  -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
   ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Access the UI:** http://localhost:3000
+
+**Tip:** With the DB path set, start monitoring from the chat or CLI (e.g. "Start monitoring all jobs") so failure history and job performance analytics get populated. The database file is created on first use (when you ask for analytics or when monitoring records an event). To create it immediately, ask once: "Show me job performance analytics." Backend logs will show `✓ Failure database initialized at /tmp/runai_failure_history.db` when the DB is first used.
+
+**Check container logs (agent, monitoring, errors):**
+```bash
+# Container ID
+docker ps
+
+# All output (nginx + backend + frontend)
+docker logs <container_id> 2>&1
+
+# Backend (NAT agent) logs only – monitoring and analytics messages appear here
+docker exec <container_id> tail -n 200 /var/log/supervisor/backend.out.log
+docker exec <container_id> tail -n 200 /var/log/supervisor/backend.err.log
+```
 
 #### With kubectl Troubleshooting (Optional)
 
@@ -145,6 +163,7 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
+  -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
   -e KUBECONFIG="/root/.kube/config" \
   -v "/path/to/your/kubeconfig.yaml:/root/.kube/config:ro" \
   ghcr.io/runai-professional-services/runai-agent:latest
@@ -158,6 +177,7 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
+  -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
   -e GITHUB_TOKEN="[YOUR_GITHUB_TOKEN]" \
   -e KUBECONFIG="/root/.kube/config" \
   -v "$HOME/.kube/config:/root/.kube/config:ro" \
@@ -1181,6 +1201,20 @@ runai_failure_analyzer:
 📚 **Documentation:**
 - **[FAILURE_ANALYSIS.md](docs/FAILURE_ANALYSIS.md)** - Complete user guide
 - **[FAILURE_ANALYSIS_QUICKSTART.md](docs/FAILURE_ANALYSIS_QUICKSTART.md)** - 5-minute quick start
+
+---
+
+## 📊 Job Performance Analytics
+
+The agent can report **historical performance insights** from the same database used for failure analysis. Run history is populated when proactive monitoring is enabled (completed jobs are recorded automatically).
+
+**Example prompts:**
+- "How long do my training jobs usually take?"
+- "Show me failure rate by project for the last 7 days"
+- "Any jobs running longer than usual?"
+- "Job performance analytics for project ml-team"
+
+**What you get:** Execution time trends (avg by project/image), failure rates by project and image, short recommendations (e.g. "Training jobs in X typically take ~2h"), and anomaly detection for running jobs that are 3× longer than their usual duration.
 
 ---
 

@@ -98,6 +98,12 @@ functions:
     pattern_threshold: 3  # Minimum occurrences to identify a pattern
     enable_auto_remediation: false  # Enable automatic remediation (with confirmation)
 
+  runai_job_analytics:
+    _type: runai_job_analytics
+    description: "THE tool for 'Show me job performance analytics' and similar. Reports execution time trends, failure rates by project/image, recommendations, and anomaly detection (jobs running 3x longer than usual). Always use this when the user asks for job performance analytics, execution trends, how long jobs take, or failure rates."
+    db_path: "${RUNAI_FAILURE_DB_PATH:-/tmp/runai_failure_history.db}"
+    lookback_days: 7
+
   runai_template_executor:
     _type: runai_template_executor
     description: |
@@ -180,6 +186,7 @@ workflow:
     - runai_manage_workload
     - runai_proactive_monitor
     - runai_failure_analyzer
+    - runai_job_analytics
     - runai_template_executor
     - runai_kubectl_troubleshoot
     - runailabs_job_generator
@@ -232,18 +239,30 @@ workflow:
     - runai_manage_workload: 🎯 **Unified lifecycle management** (suspend, resume, delete any workload type)
     - runai_proactive_monitor: 🔔 **Proactive monitoring & auto-troubleshooting** (continuously monitor jobs and alert on failures)
     - runai_failure_analyzer: 🔬 **Advanced failure analysis** (pattern recognition, cross-job correlation, automated remediation)
+    - runai_job_analytics: 📊 **Job performance analytics** (execution time trends, failure rates, recommendations, anomaly detection)
     - runai_template_executor: ⚡ **Template-Based API Executor** (NFS, PVC, Git, S3 datasources & Projects - fast, deterministic operations)
     - runai_kubectl_troubleshoot: 🆕 **Deep troubleshooting** (logs, events, diagnosis)
     - runailabs_job_generator: Generate job submission code (fetches real examples from GitHub)
     - runai_docs_search: 📚 **Search Run:AI documentation** (answers product questions from official docs)
     
+    **📊 JOB PERFORMANCE ANALYTICS - USE runai_job_analytics:**
+    When the user asks for any of the following, ALWAYS call runai_job_analytics (do NOT answer from docs or say Run:AI doesn't have this):
+    - "Show me job performance analytics" / "job performance analytics" / "performance analytics"
+    - "Execution trends" / "how long do my jobs take" / "job duration" / "average job time"
+    - "Failure rate by project" / "failure rates" / "job analytics"
+    - "Jobs running too long" / "anomaly" / "jobs taking longer than usual"
+    → Call runai_job_analytics. If the user does not specify project or time period, use defaults (last 7 days, all projects)—do NOT ask them to specify; call the tool and return the report.
+    
     **Documentation Search:**
-    When user asks questions about Run:AI features, concepts, or usage:
+    When user asks questions about Run:AI features, concepts, or usage (but NOT job performance analytics - use runai_job_analytics for that):
     - "What is a nodePool?"
     - "How do I configure X?"
     - "What does Y mean in Run:AI?"
     - Any general Run:AI product questions
     → Use runai_docs_search to get answers from official documentation
+    
+    **Job analytics & monitoring follow-up:**
+    If you just showed job performance analytics with "no data" and the user says "yes", "help me set that up", "set up monitoring", or similar, they mean: start proactive monitoring. Call runai_proactive_monitor with action="start".
     
     **🎯 DATASOURCE & PROJECT OPERATIONS - STRICT ROUTING RULES:**
     

@@ -125,6 +125,27 @@ class FailureDatabase:
             )
         """)
         
+        # Job run history (for performance analytics: execution time, trends)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS job_run_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                job_name TEXT NOT NULL,
+                project TEXT NOT NULL,
+                image TEXT,
+                status TEXT NOT NULL,
+                started_at DATETIME,
+                ended_at DATETIME NOT NULL,
+                duration_seconds INTEGER,
+                gpu_count INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(job_id)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_run_history_ended ON job_run_history(ended_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_run_history_project ON job_run_history(project)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_run_history_status ON job_run_history(status)")
+        
         # Create indexes for performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON failure_events(timestamp)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_project ON failure_events(project)")
@@ -353,6 +374,95 @@ class FailureDatabase:
         
         conn.close()
         return results
+
+    def record_job_run(
+        self,
+        job_id: str,
+        job_name: str,
+        project: str,
+        status: str,
+        ended_at: str,
+        started_at: Optional[str] = None,
+        image: Optional[str] = None,
+        gpu_count: Optional[int] = None,
+    ) -> bool:
+        """Record a completed job run (success or failure). Returns True if inserted, False if duplicate."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        duration_seconds = None
+        if started_at:
+            try:
+                start_dt = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                end_dt = datetime.fromisoformat(ended_at.replace("Z", "+00:00"))
+                duration_seconds = int((end_dt - start_dt).total_seconds())
+            except (ValueError, TypeError):
+                pass
+        try:
+            cursor.execute(
+                """
+                INSERT INTO job_run_history (job_id, job_name, project, image, status, started_at, ended_at, duration_seconds, gpu_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(job_id) DO NOTHING
+                """,
+                (job_id, job_name, project, image, status, started_at, ended_at, duration_seconds, gpu_count),
+            )
+            inserted = cursor.rowcount > 0
+            conn.commit()
+            return inserted
+        finally:
+            conn.close()
+
+    def get_job_run_history(
+        self, days: int = 7, project: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get completed job runs for analytics."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        if project:
+            cursor.execute(
+                """
+                SELECT * FROM job_run_history WHERE ended_at >= ? AND project = ?
+                ORDER BY ended_at DESC
+                """,
+                (cutoff, project),
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM job_run_history WHERE ended_at >= ? ORDER BY ended_at DESC",
+                (cutoff,),
+            )
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def get_run_aggregates(
+        self, days: int = 7, project: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Aggregate run history: avg duration by project, by image, overall."""
+        runs = self.get_job_run_history(days=days, project=project)
+        runs_with_duration = [r for r in runs if r.get("duration_seconds") is not None]
+        if not runs_with_duration:
+            return {"runs_count": len(runs), "runs_with_duration": 0}
+        by_project: Dict[str, List[int]] = defaultdict(list)
+        by_image: Dict[str, List[int]] = defaultdict(list)
+        all_durations = []
+        for r in runs_with_duration:
+            d = r["duration_seconds"]
+            all_durations.append(d)
+            by_project[r["project"]].append(d)
+            img = r.get("image") or "unknown"
+            by_image[img].append(d)
+        def _avg(lst: List[int]) -> int:
+            return int(sum(lst) / len(lst)) if lst else 0
+        return {
+            "runs_count": len(runs),
+            "runs_with_duration": len(runs_with_duration),
+            "avg_duration_seconds": _avg(all_durations),
+            "by_project": {p: _avg(durs) for p, durs in by_project.items()},
+            "by_image": {img: _avg(durs) for img, durs in list(by_image.items())[:20]},
+        }
 
 
 class FailurePatternAnalyzer:

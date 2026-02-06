@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.43] - 2026-02-06
+
+### Changed
+- Feature/job performance (#69) (70a33e4)
+- chore: trigger Docker build for version 0.1.42 (5dc9fb8)
+
+
 ## [0.1.42] - 2026-02-03
 
 ### Changed
@@ -130,5 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.41]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.41
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.42...HEAD
 [0.1.42]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.42
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.43...HEAD
+[0.1.43]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.43

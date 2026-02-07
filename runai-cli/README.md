@@ -18,6 +18,7 @@ No JSON files, no complex flags - just tell it what you need! 🎉
 ## Features
 
 - 🚀 **Natural Language Submit**: GenAI-style job submission (NEW!)
+- 📊 **NIM Benchmarking**: NVIDIA NIM LLM benchmarking on H100, H200, A100 (NEW!)
 - 🌐 **Remote Agent Support**: Connect to remote agents for team collaboration (NEW!)
 - 💬 **Interactive REPL**: Chat-style interface for multi-turn conversations
 - 🔧 **Server Management**: Start, stop, and monitor the agent server
@@ -342,6 +343,43 @@ runai-cli env delete my-env
 runai-cli env delete my-env --force
 ```
 
+### NIM Benchmarking
+
+**`benchmark run`** - Run a NIM benchmark job on a specific GPU and scenario
+
+```bash
+runai-cli benchmark run --gpu h100 --scenario throughput
+runai-cli benchmark run --gpu h200 --scenario latency --monitor
+runai-cli benchmark run --gpu a100 --scenario concurrency --monitor --export csv
+```
+
+**`benchmark status`** - Check benchmark job status
+
+```bash
+runai-cli benchmark status nim-bench-h100-throughput-202602061200 --project benchmark
+```
+
+**`benchmark logs`** - Fetch benchmark logs
+
+```bash
+runai-cli benchmark logs nim-bench-h100-throughput-202602061200
+```
+
+**`benchmark export`** - Export results to JSON or CSV
+
+```bash
+runai-cli benchmark export nim-bench-h100-throughput-202602061200 --format csv
+```
+
+**`benchmark list-gpus`** / **`benchmark list-scenarios`** - Show available options
+
+```bash
+runai-cli benchmark list-gpus
+runai-cli benchmark list-scenarios
+```
+
+**[📖 Full Benchmark Documentation →](docs/BENCHMARK.md)**
+
 ### Connection Management
 
 **`connect <target>`** - Connect to a remote agent or switch to local mode
@@ -419,10 +457,19 @@ runai-cli/
 │   ├── index.ts               # Main CLI entry point
 │   ├── commands/              # Command implementations
 │   │   ├── agent.ts           # Agent query commands
+│   │   ├── benchmark.ts       # NIM benchmark commands (NEW)
 │   │   ├── job.ts             # Job operations
 │   │   ├── environment.ts     # Environment operations
 │   │   ├── server.ts          # Server management
+│   │   ├── submit.ts          # Natural-language submit
 │   │   └── repl.ts            # Interactive REPL mode
+│   ├── benchmark/             # NVIDIA NIM benchmark module (NEW)
+│   │   ├── index.ts           # Barrel export
+│   │   ├── types.ts           # Benchmark types & interfaces
+│   │   ├── configs.ts         # GPU profiles & scenario configs
+│   │   ├── env.ts             # .env loader & validation
+│   │   ├── runner.ts          # Job builder, submit & monitor
+│   │   └── results.ts         # JSON/CSV export & summary
 │   ├── api/
 │   │   └── client.ts          # NAT REST API client
 │   ├── utils/
@@ -431,6 +478,11 @@ runai-cli/
 │   │   └── validation.ts      # Input validation
 │   └── types/
 │       └── index.ts           # Shared types
+├── docs/
+│   ├── BENCHMARK.md           # Benchmark documentation (NEW)
+│   ├── NATURAL_LANGUAGE_GUIDE.md
+│   ├── QUICKSTART_EXAMPLES.md
+│   └── REMOTE_CONNECTION.md
 ├── package.json
 ├── tsconfig.json
 └── README.md

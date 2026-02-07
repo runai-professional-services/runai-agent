@@ -12,7 +12,8 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "watch": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "echo 'No tests specified yet'"
   },
   "keywords": [
     "runai",

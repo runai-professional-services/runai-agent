@@ -13,6 +13,15 @@ import { submitCommand, submitInteractiveCommand } from './commands/submit.js';
 import { statusCommand, startCommand, stopCommand, logsCommand } from './commands/server.js';
 import { submitJobCommand, statusJobCommand, listJobsCommand, deleteJobCommand } from './commands/job.js';
 import { infoEnvironmentCommand, createEnvironmentCommand, listEnvironmentsCommand, deleteEnvironmentCommand } from './commands/environment.js';
+import {
+  benchmarkRunCommand,
+  benchmarkStatusCommand,
+  benchmarkLogsCommand,
+  benchmarkExportCommand,
+  benchmarkListGpusCommand,
+  benchmarkListScenariosCommand,
+  benchmarkPromptCommand,
+} from './commands/benchmark.js';
 import { loadConfig, saveConfig, getConfigPath, resetConfig, connectRemote, connectLocal, isRemoteAgent } from './utils/config.js';
 import { logger } from './utils/logger.js';
 import { RunAIAgentClient } from './api/client.js';
@@ -134,6 +143,64 @@ envCmd
   .description('Delete an environment')
   .option('-f, --force', 'Skip confirmation')
   .action(deleteEnvironmentCommand);
+
+// ---------------------------------------------------------------------------
+// Benchmark commands – NVIDIA NIM LLM benchmarking
+// ---------------------------------------------------------------------------
+const benchCmd = program
+  .command('benchmark')
+  .description('📊 NVIDIA NIM LLM benchmarking (H100, H200, A100)');
+
+benchCmd
+  .command('run')
+  .description('Run a NIM benchmark job on a specific GPU and scenario')
+  .requiredOption('-g, --gpu <type>', 'GPU type: h100, h200, a100')
+  .requiredOption('-s, --scenario <scenario>', 'Scenario: throughput, latency, concurrency, scaling')
+  .option('-m, --model <model>', 'Model ID (default: per-GPU profile)')
+  .option('-p, --project <project>', 'Run:AI project')
+  .option('--gpu-count <count>', 'Number of GPUs', '1')
+  .option('--image <image>', 'Override container image')
+  .option('--node-pool <pool>', 'Target node pool')
+  .option('--monitor', 'Wait for job to complete and collect metrics', false)
+  .option('--export <format>', 'Export results as json or csv')
+  .action(benchmarkRunCommand);
+
+benchCmd
+  .command('status <jobName>')
+  .description('Check the status of a running benchmark job')
+  .option('-p, --project <project>', 'Run:AI project')
+  .action(benchmarkStatusCommand);
+
+benchCmd
+  .command('logs <jobName>')
+  .description('Fetch logs from a benchmark job')
+  .option('-p, --project <project>', 'Run:AI project')
+  .action(benchmarkLogsCommand);
+
+benchCmd
+  .command('export <jobName>')
+  .description('Export benchmark results to a file')
+  .option('-p, --project <project>', 'Run:AI project')
+  .option('-f, --format <format>', 'Output format: json or csv', 'json')
+  .option('-o, --output <path>', 'Output file path')
+  .action(benchmarkExportCommand);
+
+benchCmd
+  .command('prompt <text>')
+  .description('🧠 Run a benchmark using natural language (routed via NAT agent)')
+  .option('-s, --stream', 'Stream the response in real-time')
+  .option('-p, --project <project>', 'Target project name')
+  .action(benchmarkPromptCommand);
+
+benchCmd
+  .command('list-gpus')
+  .description('List all supported GPU types')
+  .action(benchmarkListGpusCommand);
+
+benchCmd
+  .command('list-scenarios')
+  .description('List all benchmark scenarios')
+  .action(benchmarkListScenariosCommand);
 
 // Config management commands
 const configCmd = program

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.44] - 2026-02-07
+
+### Changed
+- chore: add test script to package.json (4668ce0)
+- feat: add NVIDIA NIM LLM benchmarking support (c20aa89)
+- fix: scope buildx cache by commit SHA so image matches tag (#70) (80eefd4)
+
+
 ## [0.1.43] - 2026-02-06
 
 ### Changed
@@ -139,5 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.42]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.42
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.43...HEAD
 [0.1.43]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.43
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.44...HEAD
+[0.1.44]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.44

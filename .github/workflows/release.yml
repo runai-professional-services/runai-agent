@@ -197,6 +197,8 @@ jobs:
     name: Build and Push Release Docker Image
     needs: prepare-release
     uses: ./.github/workflows/docker.yml
+    with:
+      ref: v${{ needs.prepare-release.outputs.version }}
     secrets: inherit
 
   publish-helm:

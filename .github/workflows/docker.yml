@@ -18,6 +18,11 @@ on:
         required: false
         default: 'linux/amd64'
   workflow_call:  # Allow this workflow to be called by other workflows
+    inputs:
+      ref:
+        description: 'Git ref to checkout (tag, branch, or SHA)'
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -39,6 +44,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Free up disk space

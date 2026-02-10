@@ -64,6 +64,13 @@ functions:
     include_details: true
     # allowed_projects: ["project-01"]  # Uncomment to restrict to specific projects
 
+  runai_cluster_resources:
+    _type: runai_cluster_resources
+    description: "Show cluster resource summary: GPU quota and GPU in use per project, plus cluster totals. Use for 'How is my cluster doing?', 'How many GPUs in use?', 'Cluster capacity', 'GPU utilization'."
+    max_projects: 100
+    return_direct: true  # Show full tool output (Top N, Note column, CPU/memory) without LLM summarization
+    # allowed_projects: ["*"]  # Uncomment to restrict to specific projects
+
   runai_kubectl_troubleshoot:
     _type: runai_kubectl_troubleshoot
     description: "Deep troubleshooting for failed jobs using kubectl (logs, events, pod status). Use when jobs fail or need diagnosis."
@@ -210,6 +217,7 @@ workflow:
     - runai_submit_workspace
     - runai_submit_batch
     - runai_job_status
+    - runai_cluster_resources
     - runai_manage_workload
     - runai_proactive_monitor
     - runai_failure_analyzer
@@ -228,6 +236,12 @@ workflow:
 
   initial_prompt: |
     You are an advanced RunaiLabs and Runapy SDK specialist with comprehensive access to real code examples.
+    
+    **NEXT STEPS & RECOMMENDATIONS (user-facing):**
+    When you suggest follow-up actions or recommendations, use friendly example prompts (natural language questions) instead of tool names.
+    - GOOD: "You can ask: 'Can you show me job status for project-03?'" or "Try: Show me job performance analytics"
+    - BAD: "Use runai_job_status" or "Use the runai_job_analytics function"
+    Apply this to any "Next steps", "Recommendations", or "Would you like to..." suggestions in your replies.
     
     **CODE GENERATION:**
     When user asks for job code generation:
@@ -264,6 +278,7 @@ workflow:
     - runai_submit_workspace: Submit interactive workspace sessions (Jupyter, VSCode)
     - runai_submit_batch: 🎯 **Submit multiple jobs in one operation** (training, distributed, or workspace)
     - runai_job_status: 📋 **Check specific job status OR list all jobs in a project** (provide job_name for details, or project to list all)
+    - runai_cluster_resources: 📊 **Cluster resource summary** (GPU quota and in use per project, cluster totals; "How is my cluster doing?")
     - runai_manage_workload: 🎯 **Unified lifecycle management** (suspend, resume, delete any workload type)
     - runai_proactive_monitor: 🔔 **Proactive monitoring & auto-troubleshooting** (continuously monitor jobs and alert on failures)
     - runai_failure_analyzer: 🔬 **Advanced failure analysis** (pattern recognition, cross-job correlation, automated remediation)
@@ -273,6 +288,13 @@ workflow:
     - runailabs_job_generator: Generate job submission code (fetches real examples from GitHub)
     - runai_nim_benchmark: 🚀 **NIM LLM Benchmarking** (run GPU benchmarks on H100, H200, A100 with genai-perf)
     - runai_docs_search: 📚 **Search Run:AI documentation** (answers product questions from official docs)
+    
+    **📊 CLUSTER RESOURCE SUMMARY - USE runai_cluster_resources:**
+    When the user asks for any of the following, ALWAYS call runai_cluster_resources:
+    - "How is my cluster doing?" / "cluster summary" / "cluster resources"
+    - "How many GPUs are in use?" / "GPU utilization" / "cluster capacity"
+    - "Which projects use the most GPUs?" / "show me GPU usage by project"
+    → Call runai_cluster_resources. Optional: pass project=<name> to show only that project.
     
     **📊 JOB PERFORMANCE ANALYTICS - USE runai_job_analytics:**
     When the user asks for any of the following, ALWAYS call runai_job_analytics (do NOT answer from docs or say Run:AI doesn't have this):

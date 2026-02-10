@@ -509,7 +509,7 @@ Please use one of the available projects.
 **Status:** Submitted
 
 **📊 Monitor your job:**
-Check status in the Run:AI UI or use the `runai_job_status` function
+Check status in the Run:AI UI or ask "Can you show me job status for [job name] in [project]?"
 
 **🌐 View in UI:**
 {secure_config['RUNAI_BASE_URL']}/projects/{project_name}/jobs
@@ -525,7 +525,7 @@ This might be due to SDK version incompatibility.
 **Tried:** `client.workloads.distributed.create_distributed()`
 **Error:** {str(e)}
 
-**Alternative:** Use `runailabs_job_generator` to generate submission code.
+**Alternative:** Ask "Can you generate Python code to submit a distributed training job?"
 
 **Job spec validated and ready:**
 {preview}

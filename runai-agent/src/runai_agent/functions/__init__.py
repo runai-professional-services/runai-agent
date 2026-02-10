@@ -7,6 +7,7 @@ from .job_submit_distributed import RunaiDistributedJobSubmitterConfig, runai_su
 from .job_submit_workspace import RunaiWorkspaceSubmitterConfig, runai_submit_workspace
 from .job_submit_batch import RunaiBatchJobSubmitterConfig, runai_submit_batch
 from .job_status import RunaiJobStatusConfig, runai_job_status
+from .cluster_resources import RunaiClusterResourcesConfig, runai_cluster_resources
 from .kubectl_troubleshoot import RunaiKubectlTroubleshootConfig, runai_kubectl_troubleshoot
 from .workload_lifecycle import RunaiWorkloadLifecycleConfig, runai_manage_workload
 from .template_executor import RunaiTemplateExecutorConfig, runai_template_executor
@@ -31,6 +32,8 @@ __all__ = [
     'runai_submit_batch',
     'RunaiJobStatusConfig',
     'runai_job_status',
+    'RunaiClusterResourcesConfig',
+    'runai_cluster_resources',
     'RunaiKubectlTroubleshootConfig',
     'runai_kubectl_troubleshoot',
     'RunaiWorkloadLifecycleConfig',

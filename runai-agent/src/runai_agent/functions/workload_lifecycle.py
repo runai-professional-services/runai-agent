@@ -213,10 +213,7 @@ An error occurred while trying to {action} the workload:
 
 The workload `{workload_name}` is a workspace. Workspaces cannot be suspended, only stopped (deleted).
 
-To stop this workspace, use the delete action instead:
-```
-runai_manage_workload(workload_name="{workload_name}", project="{project}", action="delete")
-```
+To stop this workspace, ask: "Can you delete workspace {workload_name} in {project}?"
 """
             elif workload_type == "distributed":
                 # Distributed workloads might not support suspend
@@ -225,7 +222,7 @@ runai_manage_workload(workload_name="{workload_name}", project="{project}", acti
 
 The workload `{workload_name}` is a distributed training job. Distributed workloads typically cannot be suspended, only deleted.
 
-To stop this workload, use the delete action instead.
+To stop this workload, ask: "Can you delete job [job name] in [project]?"
 """
             else:
                 return f"""

@@ -43,6 +43,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with Slack alerts
 - 🔬 **Advanced Failure Analysis** - Pattern recognition, cross-job correlation, and automated remediation suggestions
 - 📊 **Job Performance Analytics** - Execution time trends, failure rates by project/image, recommendations, anomaly detection
+- 📊 **Cluster Resource Summary** - GPU quota and in use per project, cluster totals ("How is my cluster doing?")
 - 🗑️ **Two-Step Confirmation** - Safe deletion with explicit user confirmation
 - ⚡ **Template-Based API Executor** - Fast, deterministic datasource management (NFS, PVC, Git, S3 with CRUD operations) - 20-50x faster than LLM
 - 🔍 **Job Status & Troubleshooting** - Check job status and get detailed kubectl diagnostics
@@ -330,6 +331,7 @@ spec:
 - **Submit interactive workspaces** (Jupyter, VSCode, custom environments)
 - **Batch job submission** - Submit multiple jobs in one operation (any mix of training, distributed, workspace)
 - **Check job status and troubleshoot issues** (works in any environment)
+- **Cluster resource summary** - See GPU quota and in use per project, cluster totals ("How is my cluster doing?")
 - **Proactively monitor workloads** - Auto-detect failures and send alerts with troubleshooting reports
 - **Manage datasources & projects** - Fast template-based CRUD operations (NFS, PVC, Git, S3, Projects, Departments)
 - **Search Run:AI official documentation** (answers questions about Run:AI features and concepts)

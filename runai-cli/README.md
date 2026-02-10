@@ -18,6 +18,7 @@ No JSON files, no complex flags - just tell it what you need! 🎉
 ## Features
 
 - 🚀 **Natural Language Submit**: GenAI-style job submission (NEW!)
+- 📊 **Cluster Resource Summary**: Ask "How is my cluster doing?" for GPU/CPU/memory quota and usage by project (NEW!)
 - 📊 **NIM Benchmarking**: NVIDIA NIM LLM benchmarking on H100, H200, A100 (NEW!)
 - 🌐 **Remote Agent Support**: Connect to remote agents for team collaboration (NEW!)
 - 💬 **Interactive REPL**: Chat-style interface for multi-turn conversations
@@ -55,7 +56,7 @@ export NVIDIA_API_KEY="your_nvidia_api_key"
 
 ```bash
 # Navigate to project root
-cd /path/to/runai-agent-test
+cd /path/to/runai-agent
 
 # Create and activate virtual environment
 python3 -m venv .venv
@@ -204,6 +205,8 @@ Options:
 
 ```bash
 runai-cli ask "Show me all projects in the cluster"
+runai-cli ask "Show me cluster resource summary"
+runai-cli ask "How is my cluster doing?"
 runai-cli ask "Generate a training job with 2 GPUs" --stream
 ```
 

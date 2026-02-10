@@ -469,7 +469,7 @@ This might be due to SDK version incompatibility.
 **Tried:** `client.workloads.trainings.create_training1()`
 **Error:** {str(e)}
 
-**Alternative:** Use `runailabs_job_generator` to generate submission code.
+**Alternative:** Ask "Can you generate Python code to submit a training job?"
 
 **Job spec validated and ready:**
 {preview}

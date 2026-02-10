@@ -114,8 +114,8 @@ No workloads found in this project.
 - No workloads have been submitted to this project yet
 - Workloads may have been deleted or completed and cleaned up
 
-**Next steps:**
-- Submit a new workload: Use `runai_submit_workload`
+**Next steps (example prompts):**
+- "Can you submit a training job in [project name]?"
 - Check project name: Verify the exact project name in Run:AI UI
 """
             
@@ -196,10 +196,10 @@ No workloads found in this project.
 - Types: {', '.join(set(w.get('type', 'unknown') for w in project_workloads))}
 - Total GPUs requested: {sum(w.get('requestedGPUs', 0) for w in project_workloads)}
 
-**Next Steps:**
-- View details: Use `runai_job_status(job_name="<job_name>")` for specific job
-- Manage workloads: Use `runai_manage_workload` to suspend, resume, or delete
-- Submit new workload: Use `runai_submit_workload`
+**Next steps (example prompts):**
+- "Can you show me status for job [job name]?"
+- "Can you suspend (or resume/delete) job [job name] in [project]?"
+- "Can you submit a training job in [project]?"
 """
             
             return report
@@ -244,9 +244,9 @@ Please provide either:
 - `project` to list all jobs in a project
 - Both to check a specific job in a specific project
 
-**Examples:**
-- Check specific job: `runai_job_status(job_name="training-01")`
-- List all jobs: `runai_job_status(project="project-01")`
+**Example prompts:**
+- "What's the status of job training-01?"
+- "List all jobs in project-01"
 """
         
         secure_config = get_secure_config()

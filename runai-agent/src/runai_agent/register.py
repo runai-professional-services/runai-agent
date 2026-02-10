@@ -10,6 +10,7 @@ from runai_agent.functions import (
     runai_submit_workspace,
     runai_submit_batch,
     runai_job_status,
+    runai_cluster_resources,
     runai_kubectl_troubleshoot,
     runai_manage_workload,
     runai_proactive_monitor,

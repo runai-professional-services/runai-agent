@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.45] - 2026-02-10
+
+### Changed
+- feat: cluster resource summary tool + example prompts in next steps (#73) (2746449)
+- fix: pass release ref to Docker build so image is tagged with release version (#72) (633240d)
+
+
 ## [0.1.44] - 2026-02-07
 
 ### Changed
@@ -149,5 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.43]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.43
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.44...HEAD
 [0.1.44]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.44
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.45...HEAD
+[0.1.45]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.45

@@ -7,7 +7,17 @@ The Run:AI agent can keep **conversation context across prompts** using NVIDIA N
 - **NAT auto_memory_agent** wraps the main agent and automatically:
   - Saves user messages and agent responses to Redis
   - Retrieves relevant past context before each response
-- **User/session isolation**: Context is scoped by **user ID**. NAT reads user ID from the **`nat-session` cookie** (not the `X-User-ID` header). The CLI and Web UI send both the cookie and the header so each user or conversation has its own memory.
+- **User/session isolation**: Context is scoped by **user ID**. NAT reads user ID from the **`nat-session` cookie** (and `X-User-ID` header). The CLI and Web UI send both so each user or conversation can have its own memory.
+
+### Default user and multi-user
+
+When no user ID is provided (no `nat-session` cookie, no `X-User-ID` header), the backend uses **`default_user`** for memory. **Everyone using `default_user` shares the same memory.** In a shared or multi-user deployment, one person’s "Remember: my favorite project is X" could be recalled by another user who also didn’t set a user ID—contexts can mix and preferences can leak.
+
+**Recommendations:**
+
+- **CLI:** Set a unique `RUNAI_USER_ID` per user or session (e.g. `RUNAI_USER_ID=alice runai-cli ask "..."`). If unset, the CLI sends `default_user` and memory is shared with anyone else not setting it.
+- **Web UI:** Ensure the frontend sends a unique session or conversation ID as the `nat-session` cookie so each browser session or conversation has its own memory.
+- **Shared deployment:** Treat `default_user` as "anonymous shared"; for real multi-user use, require or encourage unique user IDs (e.g. SSO id, conversation id, or `RUNAI_USER_ID`).
 
 ## Prerequisites
 

@@ -139,7 +139,9 @@ docker run -p 3000:3000 -p 8000:8000 \
 
 **Access the UI:** http://localhost:3000
 
-**Tip:** With the DB path set, start monitoring from the chat or CLI (e.g. "Start monitoring all jobs") so failure history and job performance analytics get populated. The database file is created on first use (when you ask for analytics or when monitoring records an event). To create it immediately, ask once: "Show me job performance analytics." Backend logs will show `✓ Failure database initialized at /tmp/runai_failure_history.db` when the DB is first used.
+**Tip:** With the DB path set, start monitoring from the chat or CLI (e.g. "Start monitoring all jobs") so failure history and job performance analytics get populated.
+
+**Conversation memory:** When the agent uses Redis for memory, context is scoped by user ID. If no user ID is set (e.g. no `RUNAI_USER_ID` for CLI), everyone shares **`default_user`** and memories can mix. For multi-user or shared deployments, give each user a unique ID; see [Conversation Memory](docs/CONVERSATION_MEMORY.md). The database file is created on first use (when you ask for analytics or when monitoring records an event). To create it immediately, ask once: "Show me job performance analytics." Backend logs will show `✓ Failure database initialized at /tmp/runai_failure_history.db` when the DB is first used.
 
 **Check container logs (agent, monitoring, errors):**
 ```bash

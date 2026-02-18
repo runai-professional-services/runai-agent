@@ -429,6 +429,13 @@ Valid configuration keys:
 - `stream` - Enable streaming responses (default: `false`)
 - `debug` - Enable debug output (default: `false`)
 
+### Conversation memory (user ID)
+
+When the agent uses Redis-backed conversation memory, each request is scoped by a **user ID** so the agent can recall context per user. The CLI sends this from the **`RUNAI_USER_ID`** environment variable; if unset, it uses **`default_user`**.
+
+- **Single user / dev:** Leaving it unset is fine; your context is stored under `default_user`.
+- **Multi-user or shared agent:** Set a unique ID per user so memories don’t mix (e.g. `RUNAI_USER_ID=alice runai-cli ask "..."`). Otherwise everyone without `RUNAI_USER_ID` shares the same `default_user` memory. See [Conversation Memory](../docs/CONVERSATION_MEMORY.md).
+
 **`config reset`** - Reset configuration to defaults
 
 ```bash

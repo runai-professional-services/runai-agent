@@ -28,7 +28,7 @@ export async function submitJobCommand(specPath: string): Promise<void> {
     
     // Load config and create client
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     const query = `Submit a training job with the following specification: ${JSON.stringify(jobSpec, null, 2)}`;
@@ -65,7 +65,7 @@ export async function submitJobCommand(specPath: string): Promise<void> {
 export async function statusJobCommand(jobName: string, options: { project?: string }): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     let query = `Check the status of job "${jobName}"`;
@@ -104,7 +104,7 @@ export async function statusJobCommand(jobName: string, options: { project?: str
 export async function listJobsCommand(options: { project?: string }): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     let query = 'List all jobs';
@@ -143,7 +143,7 @@ export async function listJobsCommand(options: { project?: string }): Promise<vo
 export async function deleteJobCommand(jobName: string, options: { project?: string; force?: boolean }): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     let query = `Delete job "${jobName}"`;

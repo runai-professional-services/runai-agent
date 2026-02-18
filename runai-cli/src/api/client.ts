@@ -15,17 +15,27 @@ export interface HealthCheckResponse {
   url: string;
 }
 
+export interface RunAIAgentClientOptions {
+  /** User/session ID for NAT conversation memory (sent as X-User-ID). Enables per-user memory when agent uses Redis memory. */
+  userId?: string;
+}
+
 export class RunAIAgentClient {
   private client: AxiosInstance;
   private baseUrl: string;
+  private userId: string;
 
-  constructor(baseUrl: string, timeout: number = 60000) {
+  constructor(baseUrl: string, timeout: number = 60000, options?: RunAIAgentClientOptions) {
     this.baseUrl = baseUrl;
+    this.userId = options?.userId ?? 'default_user';
     this.client = axios.create({
       baseURL: baseUrl,
       timeout,
       headers: {
         'Content-Type': 'application/json',
+        'X-User-ID': this.userId,
+        // NAT uses nat-session cookie (not X-User-ID) for memory user scope; send both for compatibility
+        Cookie: `nat-session=${this.userId}`,
       },
     });
   }
@@ -90,6 +100,8 @@ export class RunAIAgentClient {
         responseType: 'stream',
         headers: {
           'Accept': 'text/event-stream',
+          'X-User-ID': this.userId,
+          Cookie: `nat-session=${this.userId}`,
         },
       });
 

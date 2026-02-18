@@ -1,0 +1,20 @@
+{{- if and .Values.redis.enabled .Values.redis.persistence.enabled (not .Values.redis.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "runai-agent.redisPvcName" . }}
+  namespace: {{ include "runai-agent.namespace" . }}
+  labels:
+    {{- include "runai-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size }}
+  {{- if .Values.redis.persistence.storageClassName }}
+  storageClassName: {{ .Values.redis.persistence.storageClassName | quote }}
+  {{- end }}
+---
+{{- end }}

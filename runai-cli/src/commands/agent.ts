@@ -18,7 +18,7 @@ export async function askCommand(query: string, options: { stream?: boolean }): 
     
     // Load config and create client
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Check server health
     logger.startSpinner('Connecting to agent...');

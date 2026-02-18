@@ -5,6 +5,7 @@ Helm chart for deploying the intelligent Run:AI conversational agent with advanc
 ## Features
 
 - 🤖 **Interactive Chat Interface** - Natural language control of Run:AI clusters
+- 🧠 **Conversation Memory** - Redis-backed context per user/session (store and recall preferences)
 - 🔬 **Advanced Failure Analysis** - ML-driven root cause analysis with persistent database
 - 📊 **Continuous Monitoring** - Optional sidecar for proactive failure detection
 - 🔒 **Security First** - Kubernetes secrets for sensitive credentials
@@ -193,6 +194,26 @@ helm upgrade -i runai-agent runai-agent/runai-agent \
 | `failureAnalysis.persistence.accessModes` | PVC access modes | `[ReadWriteOnce]` |
 | `failureAnalysis.persistence.existingClaim` | Use existing PVC | `""` |
 | `failureAnalysis.database.path` | Database file path | `/data/runai_failure_history.db` |
+
+### Conversation Memory (Redis)
+
+When enabled, the chart deploys **Redis Stack** (RediSearch/JSON) in the same namespace so the agent can store and recall conversation context per user (e.g. CLI `RUNAI_USER_ID`, Web UI session). See [Conversation Memory](../../../docs/CONVERSATION_MEMORY.md) for details.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `redis.enabled` | Deploy Redis Stack in-cluster | `true` |
+| `redis.image.repository` | Redis Stack image | `redis/redis-stack` |
+| `redis.image.tag` | Image tag | `latest` |
+| `redis.port` | Redis port | `6379` |
+| `redis.db` | Redis DB index | `0` |
+| `redis.host` | When `redis.enabled: false`, use this host (e.g. `my-redis.namespace.svc`) | `""` |
+| `redis.persistence.enabled` | Persist Redis data with PVC | `true` |
+| `redis.persistence.size` | Size of Redis PVC | `1Gi` |
+| `redis.persistence.storageClassName` | Storage class for Redis PVC | `""` |
+| `redis.persistence.existingClaim` | Use existing PVC for Redis data | `""` |
+| `redis.resources` | CPU/memory requests and limits | see values.yaml |
+
+To use an **external Redis** (e.g. managed service), set `redis.enabled: false` and `redis.host` (and optionally `redis.port`, `redis.db`). The agent will still receive `REDIS_HOST`, `REDIS_PORT`, and `REDIS_DB` from these values.
 
 ### Resources
 

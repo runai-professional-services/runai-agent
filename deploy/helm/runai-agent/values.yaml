@@ -64,6 +64,34 @@ monitoring:
   # Slack webhook URL for alerts (optional)
   slackWebhookUrl: ""
 
+# Redis for conversation memory (NAT auto_memory_agent)
+# When enabled, deploys Redis Stack (RediSearch) in-cluster so the agent can store/recall context per user.
+redis:
+  # Deploy Redis Stack in the same namespace as the agent
+  enabled: true
+  # Image (Redis Stack required for RediSearch/JSON used by NAT memory)
+  image:
+    repository: redis/redis-stack
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  # When enabled=false, set host/port to use an external Redis (e.g. host: "my-redis.my-namespace.svc")
+  host: ""   # Leave empty when enabled=true (agent uses in-cluster service name)
+  port: 6379
+  db: 0
+  # Persistence for in-cluster Redis
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: ""  # Use cluster default if empty
+    existingClaim: ""     # Use existing PVC instead of creating one
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
 # Failure analysis configuration
 failureAnalysis:
   # Enable persistent storage for failure history

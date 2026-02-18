@@ -279,12 +279,17 @@ const handler = async (req: Request): Promise<Response> => {
   const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
 
   try {
+    // User/conversation scope for NAT Redis memory: NAT reads user_id from nat-session cookie (not X-User-ID)
+    const conversationId = req.headers.get('Conversation-Id') || '';
+    const userId = req.headers.get('X-User-ID') || conversationId || 'web-user';
     const response = await fetch(backendURL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Conversation-Id': req.headers.get('Conversation-Id') || '',
+        'Conversation-Id': conversationId,
         'User-Message-ID': req.headers.get('User-Message-ID') || '',
+        'X-User-ID': userId,
+        Cookie: `nat-session=${userId}`,
       },
       body: JSON.stringify(payload),
       signal: controller.signal,

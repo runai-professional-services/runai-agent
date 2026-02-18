@@ -9,7 +9,8 @@ description = "RunAI Labs Agent with RAG-enhanced code search and job generation
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
-    "nvidia-nat>=1.3.0",
+    "nvidia-nat>=1.4.0,<1.5",
+    "nvidia-nat-redis>=1.4.0,<1.5",
     "runapy>=1.0.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
@@ -19,7 +20,7 @@ dependencies = [
     "requests>=2.31.0",
     "langchain>=0.3.0",
     "langgraph>=0.2.0",
-    "nat_simple_web_query @ git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.3.1#subdirectory=examples/getting_started/simple_web_query",
+    "nat_simple_web_query @ git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.4.0#subdirectory=examples/getting_started/simple_web_query",
 ]
 
 [project.optional-dependencies]

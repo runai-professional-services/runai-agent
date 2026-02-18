@@ -16,6 +16,7 @@ const DEFAULT_CONFIG: CLIConfig = {
   stream: false,
   debug: false,
   remoteMode: false,
+  userId: process.env.RUNAI_USER_ID || 'default_user',
 };
 
 /**

@@ -15,7 +15,7 @@ import { validateEnvironmentSpec } from '../utils/validation.js';
 export async function infoEnvironmentCommand(): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     logger.startSpinner('Fetching environment information...');
     const response = await client.query('Show me the current environment setup', false);
@@ -61,7 +61,7 @@ export async function createEnvironmentCommand(specPath: string): Promise<void> 
     
     // Load config and create client
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     const query = `Create a new environment with the following specification: ${JSON.stringify(envSpec, null, 2)}`;
@@ -98,7 +98,7 @@ export async function createEnvironmentCommand(specPath: string): Promise<void> 
 export async function listEnvironmentsCommand(): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     logger.startSpinner('Fetching environments...');
     const response = await client.query('List all available environments', false);
@@ -131,7 +131,7 @@ export async function listEnvironmentsCommand(): Promise<void> {
 export async function deleteEnvironmentCommand(envName: string, options: { force?: boolean }): Promise<void> {
   try {
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Build query
     let query = `Delete environment "${envName}"`;

@@ -85,6 +85,10 @@ pip install "git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.3.1#subdire
 
 ### Environment Variables
 
+**NAT 1.4+:** This project uses `nvidia-nat>=1.4.0` and `nvidia-nat-redis>=1.4.0` for conversation memory (stable 1.4.0/1.4.1 on [PyPI](https://pypi.org/project/nvidia-nat/)).
+
+**Conversation memory:** Redis for cross-prompt context. Set `REDIS_HOST` (default `localhost`), `REDIS_PORT` (default `6379`), `REDIS_DB` (default `0`). See [Conversation Memory](../docs/CONVERSATION_MEMORY.md).
+
 Set up the required environment variables:
 
 ```bash

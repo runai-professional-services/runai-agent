@@ -1,0 +1,51 @@
+# Run:AI Agent + Redis for conversation memory
+#
+# Usage:
+#   From project root:
+#     docker compose -f deploy/docker-compose.yml up -d
+#   Or build then run:
+#     ./deploy/build-docker.sh
+#     docker compose -f deploy/docker-compose.yml up -d
+#
+# Access: http://localhost:3000 (UI), http://localhost:3000/docs (API)
+# Redis: localhost:6379 (only from host; agent uses hostname "redis")
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: runai-agent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - runai-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  agent:
+    image: nat-agent-ui:latest
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: runai-agent-ui
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - RUNAI_CLIENT_ID=${RUNAI_CLIENT_ID:-test}
+      - RUNAI_CLIENT_SECRET=${RUNAI_CLIENT_SECRET:-test}
+      - RUNAI_BASE_URL=${RUNAI_BASE_URL:-https://test.run.ai}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  runai-redis-data:

@@ -116,6 +116,16 @@ spec:
             - name: RUNAI_FAILURE_DB_PATH
               value: {{ .Values.failureAnalysis.database.path | quote }}
             
+            {{- if or .Values.redis.enabled .Values.redis.host }}
+            # Redis for conversation memory (NAT auto_memory_agent)
+            - name: REDIS_HOST
+              value: {{ .Values.redis.host | default (printf "%s-redis" (include "runai-agent.fullname" .)) | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_DB
+              value: {{ .Values.redis.db | quote }}
+            {{- end }}
+            
             {{- if .Values.github.token }}
             # GitHub token (optional)
             - name: GITHUB_TOKEN

@@ -81,6 +81,10 @@ if [ $? -eq 0 ]; then
     echo -e "${BLUE}Access the API:${NC}"
     echo "  http://localhost:8000/generate"
     echo ""
+    echo -e "${BLUE}Run with Redis (conversation memory):${NC}"
+    echo "  docker compose -f deploy/docker-compose.yml up -d"
+    echo "  (Set NVIDIA_API_KEY, RUNAI_* in env or .env; see docs/CONVERSATION_MEMORY.md)"
+    echo ""
 else
     echo ""
     echo -e "${RED}✗${NC} Build failed!"

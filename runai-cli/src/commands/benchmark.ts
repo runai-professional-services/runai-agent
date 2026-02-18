@@ -316,7 +316,7 @@ export async function benchmarkPromptCommand(
 
     // Load config and create client
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
 
     logger.header('🧠 NIM Benchmark (NAT prompt)');
     logger.plain('');

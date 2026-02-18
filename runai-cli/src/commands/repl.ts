@@ -10,7 +10,7 @@ import { sanitizeInput } from '../utils/validation.js';
 
 export async function replCommand(): Promise<void> {
   const config = loadConfig();
-  const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+  const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
   
   // Check server health
   logger.startSpinner('Connecting to agent...');

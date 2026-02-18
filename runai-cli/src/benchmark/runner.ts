@@ -147,7 +147,7 @@ export async function submitBenchmarkJob(
   spec: BenchmarkJobSpec,
 ): Promise<string> {
   const config = loadConfig();
-  const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+  const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
 
   // Build a natural-language prompt the agent understands
   const prompt = [
@@ -180,7 +180,7 @@ export async function monitorBenchmarkJob(
   timeoutMs: number = 30 * 60 * 1000,
 ): Promise<BenchmarkResult> {
   const config = loadConfig();
-  const client = new RunAIAgentClient(config.agentUrl, Math.max(config.timeout, 30000));
+  const client = new RunAIAgentClient(config.agentUrl, Math.max(config.timeout, 30000), { userId: config.userId });
 
   const startTime = Date.now();
   let status: BenchmarkStatus = 'pending';
@@ -240,7 +240,7 @@ export async function fetchBenchmarkLogs(
   project: string,
 ): Promise<string> {
   const config = loadConfig();
-  const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+  const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
 
   const query = `Troubleshoot job "${jobName}" in project "${project}"`;
   const res = await client.query(query, false);

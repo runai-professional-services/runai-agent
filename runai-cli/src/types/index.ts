@@ -59,6 +59,8 @@ export interface CLIConfig {
   stream: boolean;
   debug: boolean;
   remoteMode?: boolean;  // Whether connecting to a remote agent
+  /** User/session ID for agent conversation memory (NAT X-User-ID). Default from RUNAI_USER_ID or "default_user". */
+  userId?: string;
 }
 
 export interface JobStatus {

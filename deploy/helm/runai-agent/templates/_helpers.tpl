@@ -67,6 +67,24 @@ Get Run:AI client ID from secret or values
 {{- end }}
 
 {{/*
+Redis fullname (for deployment/service when redis.enabled)
+*/}}
+{{- define "runai-agent.redisFullname" -}}
+{{- printf "%s-redis" (include "runai-agent.fullname" .) }}
+{{- end }}
+
+{{/*
+Redis PVC name (for new claim; when existingClaim set, deployment uses that instead)
+*/}}
+{{- define "runai-agent.redisPvcName" -}}
+{{- if .Values.redis.persistence.existingClaim }}
+{{- .Values.redis.persistence.existingClaim }}
+{{- else }}
+{{- printf "%s-redis-data" (include "runai-agent.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
 PVC name for failure analysis
 */}}
 {{- define "runai-agent.pvcName" -}}

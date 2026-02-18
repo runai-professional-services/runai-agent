@@ -17,7 +17,7 @@ const PID_FILE = path.join(os.homedir(), '.runai-cli', 'server.pid');
  */
 export async function statusCommand(): Promise<void> {
   const config = loadConfig();
-  const client = new RunAIAgentClient(config.agentUrl, 5000);
+  const client = new RunAIAgentClient(config.agentUrl, 5000, { userId: config.userId });
   const isRemote = config.remoteMode || isRemoteAgent(config.agentUrl);
   
   logger.startSpinner('Checking server status...');
@@ -85,7 +85,7 @@ export async function startCommand(options: { background?: boolean }): Promise<v
   }
   
   // Check if already running
-  const client = new RunAIAgentClient(config.agentUrl, 5000);
+  const client = new RunAIAgentClient(config.agentUrl, 5000, { userId: config.userId });
   const health = await client.healthCheck();
   
   if (health.running) {

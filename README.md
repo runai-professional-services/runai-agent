@@ -1479,6 +1479,7 @@ See [`deploy/SIMPLIFICATION_SUMMARY.md`](deploy/SIMPLIFICATION_SUMMARY.md) for f
 - `GITHUB_TOKEN` - GitHub token (avoids API rate limits for fetching code examples)
 - `RUNAI_FAILURE_DB_PATH` - Custom path for failure analysis database (default: `/tmp` for local, `/data` for K8s)
 - `RUNAI_TEMPLATE_DEBUG` - Enable verbose logging for template executor (`true`/`false`, default: `false`)
+- **Conversation memory (Redis):** `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` - Redis connection for cross-prompt context (see [Conversation Memory](docs/CONVERSATION_MEMORY.md))
 
 **Auto-Detected (Run:Ai):**
 - `RUNAI_PROJECT` - Automatically set by Run:Ai

@@ -63,14 +63,37 @@ RUN pip install --no-cache-dir uv
 # Create virtual environment and install NAT from PyPI
 RUN uv venv .venv && \
     . .venv/bin/activate && \
-    uv pip install "nvidia-nat[langchain]==1.3.1" && \
-    GIT_LFS_SKIP_SMUDGE=1 uv pip install "git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.3.1#subdirectory=examples/getting_started/simple_web_query"
+    uv pip install "nvidia-nat[langchain]>=1.4.0" && \
+    GIT_LFS_SKIP_SMUDGE=1 uv pip install "git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.4.0#subdirectory=examples/getting_started/simple_web_query"
 
 # Copy and install custom RunAI agent
 COPY runai-agent/ /app/runai-agent/
 RUN . .venv/bin/activate && \
     cd /app/runai-agent && \
     uv pip install -e .
+
+# Patch NAT Redis plugin to treat "Unknown index name" (Redis Stack) as missing index so it creates it
+RUN sed -i 's/"no such index" not in error_msg.lower() and "Index needs recreation"/"no such index" not in error_msg.lower() and "unknown index name" not in error_msg.lower() and "Index needs recreation"/' /app/.venv/lib/python3.13/site-packages/nat/plugins/redis/schema.py
+
+# Patch NAT auto_memory_agent to use context.user_id (cookie) and X-User-ID header for memory user scope
+RUN python3 -c "\
+import pathlib; \
+p=pathlib.Path('/app/.venv/lib/python3.13/site-packages/nat/agent/auto_memory_wrapper/agent.py'); \
+t=p.read_text(); \
+o='        # Fallback: default for development/testing'; \
+n='        # Priority 2.5: From context (nat-session cookie)\n        if self._context.user_id:\n            logger.info(\"Memory user_id from context (cookie): %s\", self._context.user_id)\n            return self._context.user_id\n        # Priority 2.6: From request header X-User-ID\n        try:\n            req = getattr(self._context.metadata, \"_request\", None)\n            if req is not None:\n                h = getattr(req, \"headers\", None)\n                if h is not None:\n                    uid = h.get(\"X-User-ID\") or (h.get(\"x-user-id\") if hasattr(h,\"get\") else None)\n                    if uid:\n                        logger.info(\"Memory user_id from X-User-ID header: %s\", uid)\n                        return uid\n        except Exception:\n            pass\n        # Fallback: default for development/testing'; \
+ok=o in t; (p.write_text(t.replace(o,n,1)) if ok else __import__('sys').exit('Patch target not found')); \
+"
+
+# Patch NAT Redis plugin: compute embedding from conversation when memory_item.memory is empty,
+# so KNN search can find stored items (otherwise only items with non-empty memory get an embedding).
+COPY deploy/patches/patch_redis_embed_from_conversation.py /app/deploy/patches/
+RUN python3 /app/deploy/patches/patch_redis_embed_from_conversation.py
+
+# Patch NAT auto_memory_agent: inject conversation content into prompt when item.memory is empty,
+# so the LLM sees retrieved context (otherwise only item.memory is injected and our stored items have memory="").
+COPY deploy/patches/patch_auto_memory_inject_conversation.py /app/deploy/patches/
+RUN python3 /app/deploy/patches/patch_auto_memory_inject_conversation.py
 
 # ============================================
 # Frontend Setup
@@ -92,7 +115,8 @@ COPY deploy/nginx.conf /etc/nginx/nginx.conf
 RUN mkdir -p /var/log/nginx
 
 # ============================================
-# Configure Supervisord
+# Configure Supervisord (backend/frontend logs in /var/log/supervisor/; use
+# docker exec <cid> cat /var/log/supervisor/backend.err.log to debug backend)
 # ============================================
 
 RUN echo '[supervisord]\n\
@@ -194,6 +218,9 @@ fi\n\
 export RUNAI_CLIENT_ID="${RUNAI_CLIENT_ID:-test}"\n\
 export RUNAI_CLIENT_SECRET="${RUNAI_CLIENT_SECRET:-test}"\n\
 export RUNAI_BASE_URL="${RUNAI_BASE_URL:-https://test.run.ai}"\n\
+export REDIS_HOST="${REDIS_HOST:-localhost}"\n\
+export REDIS_PORT="${REDIS_PORT:-6379}"\n\
+export REDIS_DB="${REDIS_DB:-0}"\n\
 \n\
 echo "Configuration:"\n\
 if [ -z "$NVIDIA_API_KEY" ]; then\n\
@@ -203,6 +230,7 @@ else\n\
 fi\n\
 echo "  RUNAI_CLIENT_ID: $RUNAI_CLIENT_ID"\n\
 echo "  RUNAI_BASE_URL: $RUNAI_BASE_URL"\n\
+echo "  REDIS: $REDIS_HOST:$REDIS_PORT (conversation memory)"\n\
 echo ""\n\
 echo "Services:"\n\
 echo "  ✓ Nginx (port 3000) - Entry point"\n\

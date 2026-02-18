@@ -31,7 +31,7 @@ export async function submitCommand(prompt: string, options: {
     
     // Load config and create client
     const config = loadConfig();
-    const client = new RunAIAgentClient(config.agentUrl, config.timeout);
+    const client = new RunAIAgentClient(config.agentUrl, config.timeout, { userId: config.userId });
     
     // Show what we're doing
     logger.info('🚀 Processing your request...');

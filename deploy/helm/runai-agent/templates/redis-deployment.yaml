@@ -29,10 +29,14 @@ spec:
             - name: redis
               containerPort: 6379
               protocol: TCP
+          # Use redis-stack-server so RediSearch (FT.*) and RedisJSON are loaded; redis-server would be plain Redis
           args:
-            - redis-server
+            - redis-stack-server
             - --appendonly
             - "yes"
+            # Allow connections from agent pod (non-loopback); cluster network is trusted
+            - --protected-mode
+            - "no"
           livenessProbe:
             exec:
               command:

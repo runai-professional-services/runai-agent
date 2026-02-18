@@ -66,6 +66,7 @@ monitoring:
 
 # Redis for conversation memory (NAT auto_memory_agent)
 # When enabled, deploys Redis Stack (RediSearch) in-cluster so the agent can store/recall context per user.
+# In-cluster Redis runs with protected-mode off so the agent pod can connect; the service is not exposed outside the cluster.
 redis:
   # Deploy Redis Stack in the same namespace as the agent
   enabled: true

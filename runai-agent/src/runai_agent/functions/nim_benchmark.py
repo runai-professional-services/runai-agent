@@ -4,7 +4,7 @@ NVIDIA NIM LLM Benchmark tool for the Run:AI Agent.
 NAT routes benchmark-related intents here.  The function:
 1. Parses / defaults GPU type, scenario, model, project, gpu_count
 2. Builds the benchmark container spec (genai-perf on NIM)
-3. Submits a Run:AI training job via the SDK
+3. Submits a Run:AI training job via the mcp-server-runai HTTP API
 4. Returns structured JSON results
 
 Intent keywords (handled by NAT routing in workflow.yaml):
@@ -17,6 +17,9 @@ Safe defaults when the user omits parameters:
   model     → meta/llama-3.1-8b-instruct
   project   → first available project (or env RUNAI_BENCHMARK_PROJECT)
   gpu_count → 1
+
+Requires:
+  MCP_SERVER_URL environment variable pointing to the mcp-server-runai endpoint.
 """
 
 import json
@@ -30,7 +33,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import get_secure_config, sanitize_input, logger
+from ..utils import call_mcp_tool, logger
 
 
 # ── GPU Profiles ─────────────────────────────────────────────────────────────
@@ -247,17 +250,6 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
     - Structured JSON result output
     """
 
-    # Check SDK availability once
-    try:
-        from runai.configuration import Configuration
-        from runai.api_client import ApiClient
-        from runai.runai_client import RunaiClient
-        from runai import models
-        SDK_AVAILABLE = True
-        logger.debug("✓ Run:AI SDK is available for benchmark submission")
-    except ImportError:
-        SDK_AVAILABLE = False
-        logger.warning("⚠️  Run:AI SDK not installed. Benchmark jobs will be previewed only.")
 
     # ──────────────────────────────────────────────────────────────────────
     async def _run_benchmark(
@@ -311,22 +303,9 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
             # ── 2. Resolve project ───────────────────────────────────────
             effective_project = project or os.environ.get("RUNAI_BENCHMARK_PROJECT")
 
-            # ── 3. Build env vars for the container ──────────────────────
-            nvidia_api_key = os.environ.get("NVIDIA_API_KEY", "")
-            env_vars = {
-                "NVIDIA_API_KEY": nvidia_api_key,
-                "NIM_MODEL": effective_model,
-                "BENCHMARK_SCENARIO": scenario_key,
-                "BENCHMARK_GPU_TYPE": gpu_key,
-                "BENCHMARK_CONCURRENCY": str(scenario_cfg["concurrency"]),
-                "BENCHMARK_TOTAL_REQUESTS": str(scenario_cfg["total_requests"]),
-                "BENCHMARK_MAX_TOKENS": str(scenario_cfg["max_tokens"]),
-                "BENCHMARK_INPUT_TOKENS": str(scenario_cfg["input_tokens"]),
-            }
-
             command = _build_benchmark_command(effective_model, scenario_cfg, gpu_profile)
 
-            # ── 4. Build structured job spec ─────────────────────────────
+            # ── 3. Build structured job spec ─────────────────────────────
             benchmark_spec = {
                 "name": job_name,
                 "project": effective_project,
@@ -336,7 +315,6 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                 "scenario": scenario_key,
                 "model": effective_model,
                 "command": command,
-                "env_vars": env_vars,
                 "node_pool": node_pool,
             }
 
@@ -364,94 +342,55 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                     f"To proceed, call again with confirmed=True and dry_run=False.\n"
                 )
 
-            # ── 7. Submit the job ────────────────────────────────────────
-            if not SDK_AVAILABLE:
+            # ── 7. Submit the job via MCP server ────────────────────────
+            mcp_url = os.environ.get("MCP_SERVER_URL", "").rstrip("/")
+            if not mcp_url:
                 return (
-                    f"⚠️  **Run:AI SDK Not Installed**\n\n"
-                    f"Benchmark validated but cannot submit without `runapy`.\n\n"
+                    f"⚠️  **MCP Server Not Configured**\n\n"
+                    f"Benchmark validated but cannot submit: `MCP_SERVER_URL` not set.\n\n"
                     f"{preview}\n\n"
-                    f"Install with: `pip install runapy`\n"
+                    f"Set `MCP_SERVER_URL` to point to the mcp-server-runai endpoint.\n"
                 )
 
-            secure_config = get_secure_config()
-
-            configuration = Configuration(
-                client_id=secure_config["RUNAI_CLIENT_ID"],
-                client_secret=secure_config["RUNAI_CLIENT_SECRET"],
-                runai_base_url=secure_config["RUNAI_BASE_URL"],
-            )
-            client = RunaiClient(ApiClient(configuration))
-
-            # Resolve project → project_id, cluster_id
-            projects_response = client.organizations.projects.get_projects()
-            projects_data = (
-                projects_response.data
-                if hasattr(projects_response, "data")
-                else projects_response
-            )
-            project_list = (
-                projects_data.get("projects", [])
-                if isinstance(projects_data, dict)
-                else []
-            )
-
-            # If no project specified, pick first available
+            # If no project specified, resolve via MCP server
             if not effective_project:
-                if project_list:
-                    effective_project = project_list[0].get("name")
-                    logger.info(f"No project specified, defaulting to: {effective_project}")
-                else:
-                    return "❌ **No projects found** in the Run:AI cluster."
+                try:
+                    projects_data = await call_mcp_tool(mcp_url, "list_projects", {})
+                    project_list = projects_data.get("projects", [])
+                    if project_list:
+                        effective_project = project_list[0].get("name")
+                        logger.info(f"No project specified, defaulting to: {effective_project}")
+                    else:
+                        return "❌ **No projects found** in the Run:AI cluster."
+                except Exception as e:
+                    return f"❌ **Could not list projects from MCP server:** {e}"
 
             # Validate project access
             if "*" not in config.allowed_projects and effective_project not in config.allowed_projects:
                 return f"❌ **Project '{effective_project}' not in allowed list:** {config.allowed_projects}"
 
-            project_id = None
-            cluster_id = None
-            for p in project_list:
-                if p.get("name") == effective_project:
-                    project_id = p.get("id")
-                    cluster_id = p.get("clusterId") or p.get("cluster_id")
-                    break
-
-            if not project_id:
-                available = [p.get("name") for p in project_list if p.get("name")]
+            logger.info(f"Submitting benchmark job: {job_name}")
+            try:
+                result = await call_mcp_tool(mcp_url, "submit_training", {
+                    "name": job_name,
+                    "project_name": effective_project,
+                    "image": effective_image,
+                    "gpu_devices": int(effective_gpu_count),
+                    "cpu_core_request": 4.0,
+                    "cpu_memory_request": "32Gi",
+                    "command": command,
+                })
+            except Exception as e:
                 return (
-                    f"❌ **Project not found:** `{effective_project}`\n\n"
-                    f"**Available projects:** {', '.join(available)}\n"
+                    f"❌ **Benchmark Submission Failed**\n\n"
+                    f"**Error:** {e}\n\n"
+                    f"**Troubleshooting:**\n"
+                    f"1. Verify `MCP_SERVER_URL` is reachable: {mcp_url}\n"
+                    f"2. Check that the project '{effective_project}' exists\n"
+                    f"3. Ensure GPU resources are available\n"
                 )
 
-            # Build Run:AI training spec
-            compute = {
-                "gpuDevicesRequest": int(effective_gpu_count),
-                "cpuCoreRequest": 4,
-                "cpuMemoryRequest": "32Gi",
-            }
-
-            spec = models.TrainingSpecSpec(
-                image=effective_image,
-                compute=compute,
-            )
-            spec.command = command
-
-            # Add environment variables
-            if hasattr(spec, "environment_variables"):
-                spec.environment_variables = env_vars
-            elif hasattr(spec, "env"):
-                spec.env = env_vars
-
-            training_request = models.TrainingCreationRequest(
-                name=job_name,
-                project_id=project_id,
-                cluster_id=cluster_id,
-                spec=spec,
-            )
-
-            logger.info(f"Submitting benchmark job: {job_name}")
-            job = client.workloads.trainings.create_training1(training_request)
-
-            job_id = job.id if hasattr(job, "id") else "N/A"
+            job_id = result.get("id") or result.get("name") or "N/A"
 
             # Build results JSON
             results_json = json.dumps(
@@ -481,13 +420,11 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                 f"✅ **NIM Benchmark Job Submitted!**\n\n"
                 f"{preview}\n\n"
                 f"**Job ID:** {job_id}\n"
-                f"**Project:** {effective_project} (ID: {project_id})\n"
-                f"**Cluster ID:** {cluster_id}\n"
+                f"**Project:** {effective_project}\n"
                 f"**Status:** Submitted\n\n"
                 f"**📊 Monitor your benchmark:**\n"
                 f"- Check status: ask me 'Check status of job {job_name}'\n"
-                f"- View logs: ask me 'Show logs for job {job_name}'\n"
-                f"- View in UI: {secure_config['RUNAI_BASE_URL']}/projects/{effective_project}/jobs\n\n"
+                f"- View logs: ask me 'Show logs for job {job_name}'\n\n"
                 f"**📋 Structured Results:**\n"
                 f"```json\n{results_json}\n```\n"
             )
@@ -500,10 +437,9 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                 f"❌ **Benchmark Submission Failed**\n\n"
                 f"**Error:** {str(e)}\n\n"
                 f"**Troubleshooting:**\n"
-                f"1. Check Run:AI credentials are valid\n"
+                f"1. Verify `MCP_SERVER_URL` is set and reachable\n"
                 f"2. Verify the project exists\n"
                 f"3. Ensure GPU resources are available\n"
-                f"4. Check NVIDIA_API_KEY is set\n"
             )
 
     # ──────────────────────────────────────────────────────────────────────

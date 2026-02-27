@@ -58,6 +58,10 @@ spec:
               protocol: TCP
           
           env:
+            # MCP server URL (mcp-server-runai)
+            - name: MCP_SERVER_URL
+              value: {{ .Values.mcpServer.url | quote }}
+
             # NVIDIA API Key
             - name: NVIDIA_API_KEY
               {{- if .Values.nvidia.existingSecret }}
@@ -183,7 +187,11 @@ spec:
               python scripts/monitor_sidecar.py --poll-interval {{ .Values.monitoring.pollInterval }}
           
           env:
-            # Run:AI credentials
+            # MCP server URL (mcp-server-runai)
+            - name: MCP_SERVER_URL
+              value: {{ .Values.mcpServer.url | quote }}
+
+            # Run:AI credentials (used by proactive_monitor, job_analytics, kubectl_troubleshoot)
             - name: RUNAI_CLIENT_ID
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -196,7 +204,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_CLIENT_ID
               {{- end }}
-            
+
             - name: RUNAI_CLIENT_SECRET
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -209,7 +217,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_CLIENT_SECRET
               {{- end }}
-            
+
             - name: RUNAI_BASE_URL
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -222,7 +230,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_BASE_URL
               {{- end }}
-            
+
             # NVIDIA API Key
             - name: NVIDIA_API_KEY
               {{- if .Values.nvidia.existingSecret }}
@@ -236,7 +244,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-nvidia-key
                   key: NVIDIA_API_KEY
               {{- end }}
-            
+
             # Failure database path
             - name: RUNAI_FAILURE_DB_PATH
               value: {{ .Values.failureAnalysis.database.path | quote }}

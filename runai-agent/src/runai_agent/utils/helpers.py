@@ -1,5 +1,6 @@
 """Shared helper functions and utilities for Run:AI agent"""
 
+import json
 import logging
 import os
 import asyncio
@@ -167,6 +168,58 @@ def _search_workload_by_name_helper(client, job_name_to_search: str, project_id:
         import traceback
         logger.debug(f"Traceback: {traceback.format_exc()}")
         return None, None
+
+
+async def call_mcp_tool(mcp_base_url: str, tool_name: str, arguments: dict) -> dict:
+    """Call a tool on the MCP server via HTTP (MCP streamable HTTP transport)."""
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": tool_name,
+            "arguments": arguments,
+        },
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{mcp_base_url.rstrip('/')}/mcp",
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+            },
+            timeout=aiohttp.ClientTimeout(total=30),
+        ) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+            if "text/event-stream" in content_type:
+                text = await resp.text()
+                for line in text.splitlines():
+                    if line.startswith("data: "):
+                        data = json.loads(line[6:])
+                        if "result" in data:
+                            return _extract_mcp_result(data["result"])
+                        elif "error" in data:
+                            raise RuntimeError(f"MCP tool error: {data['error']}")
+                raise RuntimeError("No result found in MCP SSE stream")
+            else:
+                data = await resp.json()
+                if "result" in data:
+                    return _extract_mcp_result(data["result"])
+                elif "error" in data:
+                    raise RuntimeError(f"MCP tool error: {data['error']}")
+                raise RuntimeError(f"Unexpected MCP response: {data}")
+
+
+def _extract_mcp_result(result: dict) -> dict:
+    """Extract and parse the text content from an MCP tool result."""
+    for item in result.get("content", []):
+        if item.get("type") == "text":
+            try:
+                return json.loads(item["text"])
+            except (json.JSONDecodeError, TypeError):
+                return {"text": item["text"]}
+    return result
 
 
 class RunapyExamplesFetcher:

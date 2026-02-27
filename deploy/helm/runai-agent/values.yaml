@@ -10,6 +10,11 @@ global:
   # Deployment name for the agent
   deploymentName: "runai-agent"
 
+# MCP server configuration
+# The agent connects to mcp-server-runai for all Run:AI workload/project/asset operations.
+mcpServer:
+  url: "http://mcp-server-runai:8080"  # URL of the mcp-server-runai service
+
 # Container image configuration
 image:
   repository: ghcr.io/runai-professional-services/runai-agent

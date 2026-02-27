@@ -24,7 +24,7 @@ mcp-server-runai:
   enabled: true
 
   image:
-    repository: ghcr.io/runai-professional-services/runai-professional-services/mcp-server-runai
+    repository: ghcr.io/runai-professional-services/mcp-server-runai
     tag: ""           # defaults to Chart.appVersion
     pullPolicy: IfNotPresent
 

@@ -13,6 +13,11 @@
 
 🔧 Components:
   • Main Agent: Chat interface + API
+  {{- if index .Values "mcp-server-runai" "enabled" }}
+  • MCP Server: {{ include "runai-agent.mcpServerUrl" . }}
+  {{- else }}
+  • MCP Server: {{ .Values.mcpServer.url }} (external)
+  {{- end }}
   {{- if .Values.monitoring.enabled }}
   • Monitoring Sidecar: Polling every {{ .Values.monitoring.pollInterval }}s
   {{- end }}

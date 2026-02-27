@@ -17,3 +17,9 @@ home: https://github.com/runai-professional-services/runai-agent
 sources:
   - https://github.com/runai-professional-services/runai-agent
 
+dependencies:
+  - name: mcp-server-runai
+    version: "~0.1.0"
+    repository: "oci://ghcr.io/runai-professional-services/charts"
+    condition: mcp-server-runai.enabled
+

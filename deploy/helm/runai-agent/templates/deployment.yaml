@@ -58,9 +58,9 @@ spec:
               protocol: TCP
           
           env:
-            # MCP server URL (mcp-server-runai)
+            # MCP server URL — auto-derived from subchart when mcp-server-runai.enabled=true
             - name: MCP_SERVER_URL
-              value: {{ .Values.mcpServer.url | quote }}
+              value: {{ include "runai-agent.mcpServerUrl" . | quote }}
 
             # NVIDIA API Key
             - name: NVIDIA_API_KEY
@@ -187,9 +187,9 @@ spec:
               python scripts/monitor_sidecar.py --poll-interval {{ .Values.monitoring.pollInterval }}
           
           env:
-            # MCP server URL (mcp-server-runai)
+            # MCP server URL — auto-derived from subchart when mcp-server-runai.enabled=true
             - name: MCP_SERVER_URL
-              value: {{ .Values.mcpServer.url | quote }}
+              value: {{ include "runai-agent.mcpServerUrl" . | quote }}
 
             # Run:AI credentials (used by proactive_monitor, job_analytics, kubectl_troubleshoot)
             - name: RUNAI_CLIENT_ID

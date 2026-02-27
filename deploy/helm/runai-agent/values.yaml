@@ -11,9 +11,36 @@ global:
   deploymentName: "runai-agent"
 
 # MCP server configuration
-# The agent connects to mcp-server-runai for all Run:AI workload/project/asset operations.
+# When mcp-server-runai.enabled=true (default), the URL is auto-derived from the subchart's
+# ClusterIP service. Override url only if you are pointing at an existing MCP server deployment.
 mcpServer:
-  url: "http://mcp-server-runai:8080"  # URL of the mcp-server-runai service
+  url: ""  # Leave empty to auto-derive from the subchart; set explicitly to use an existing deployment
+
+# ── mcp-server-runai subchart ────────────────────────────────────────────────
+# The agent requires mcp-server-runai for all Run:AI platform operations.
+# Set enabled=false if you already have mcp-server-runai deployed separately,
+# then set mcpServer.url above to point to it.
+mcp-server-runai:
+  enabled: true
+
+  image:
+    repository: ghcr.io/runai-professional-services/runai-professional-services/mcp-server-runai
+    tag: ""           # defaults to Chart.appVersion
+    pullPolicy: IfNotPresent
+
+  # Run:AI credentials for the MCP server
+  runai:
+    baseUrl: ""       # e.g. https://myorg.run.ai  — set via --set mcp-server-runai.runai.baseUrl=...
+    credentials:
+      clientId: ""    # set via --set mcp-server-runai.runai.credentials.clientId=...
+      clientSecret: "" # set via --set mcp-server-runai.runai.credentials.clientSecret=...
+      existingSecret: ""  # recommended: name of a pre-existing Secret with clientId/clientSecret keys
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 8080
 
 # Container image configuration
 image:

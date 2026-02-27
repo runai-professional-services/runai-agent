@@ -10,7 +10,15 @@ image:
   tag: ""  # Uses Chart.appVersion
   pullPolicy: Always
 
-# Use existing secrets (recommended)
+# MCP server — bundled subchart (provides all Run:AI platform operations)
+mcp-server-runai:
+  enabled: true
+  runai:
+    baseUrl: "https://myorg.run.ai"
+    credentials:
+      existingSecret: "runai-creds"  # Secret keys: clientId, clientSecret
+
+# Run:AI credentials for monitoring functions (proactive_monitor, job_analytics)
 runai:
   existingSecret: "runai-creds"
 

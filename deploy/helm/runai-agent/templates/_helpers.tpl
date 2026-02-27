@@ -67,6 +67,20 @@ Get Run:AI client ID from secret or values
 {{- end }}
 
 {{/*
+Effective MCP server URL.
+Prefers an explicit mcpServer.url; falls back to the subchart's ClusterIP service
+when mcp-server-runai.enabled=true.
+*/}}
+{{- define "runai-agent.mcpServerUrl" -}}
+{{- if .Values.mcpServer.url -}}
+{{- .Values.mcpServer.url -}}
+{{- else if index .Values "mcp-server-runai" "enabled" -}}
+{{- $port := int (index .Values "mcp-server-runai" "service" "port" | default 8080) -}}
+{{- printf "http://%s-mcp-server-runai:%d" .Release.Name $port -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 PVC name for failure analysis
 */}}
 {{- define "runai-agent.pvcName" -}}

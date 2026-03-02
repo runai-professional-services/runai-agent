@@ -1,16 +1,25 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
-# Patch NAT's MCP type converter to handle 'None' as empty JSON object.
+# Patch NAT's TypeConverter to handle 'None' as empty JSON object.
 #
-# When a model outputs `Action Input: None` for a no-argument or optional-argument
-# MCP tool, NAT passes the string 'None' to model_validate_json(), which fails
-# because 'None' is not valid JSON. This patch converts 'None'/'null'/'' → '{}'
-# before the Pydantic validator sees it, so those tools are called with no args
-# instead of raising a ValidationError.
+# Two related bugs in NAT (confirmed through v1.4.1):
+#
+# Bug 1 — MCP tools (nat.plugins.mcp.client_base):
+#   When a model outputs `Action Input: None`, NAT passes the string 'None' to
+#   model_validate_json(), which fails because 'None' is not valid JSON.
+#
+# Bug 2 — Native NAT functions (nat.builder.function_base._convert_input):
+#   The TypeConverter.convert() call has no str→BaseModel converter registered,
+#   so converting the string 'None' to an InputArgsSchema raises:
+#   ValueError: Cannot convert type <class 'str'> to InputArgsSchema. No match found.
+#
+# Fix: patch _try_direct_conversion to intercept 'None'/'null'/'' and directly
+# instantiate the target BaseModel with model_validate_json('{}'), which succeeds
+# for any model whose fields are all optional. Required-arg tools fail gracefully
+# (ValidationError → except → fall through → model retries with proper args).
 #
 # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit
-# Fixed in NAT: not yet (confirmed through v1.4.1)
 from nat.utils import type_converter as _tc
 from pydantic import BaseModel as _BaseModel
 
@@ -21,8 +30,8 @@ def _patched_try_direct(self, data, root):  # type: ignore[override]
     if isinstance(data, str) and data.strip() in ("None", "none", "null", ""):
         try:
             if isinstance(root, type) and issubclass(root, _BaseModel):
-                data = "{}"
-        except TypeError:
+                return root.model_validate_json("{}")
+        except Exception:
             pass
     return _orig_try_direct(self, data, root)
 

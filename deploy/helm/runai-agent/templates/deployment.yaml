@@ -43,6 +43,22 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       
+      {{- if and ((index .Values "mcp-server-runai").enabled) (not .Values.mcpServer.url) }}
+      initContainers:
+        - name: wait-for-mcp-server
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MCP server to be ready at {{ include "runai-agent.mcpServerUrl" . }}/ready ..."
+              until wget -qO /dev/null "{{ include "runai-agent.mcpServerUrl" . }}/ready"; do
+                echo "  MCP server not ready (503), retrying in 5s..."
+                sleep 5
+              done
+              echo "MCP server is ready."
+      {{- end }}
+
       containers:
         # Main agent container
         - name: nat-agent

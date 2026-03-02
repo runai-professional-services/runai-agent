@@ -32,6 +32,9 @@ out/
 # Cursor AI development documentation (private)
 .cursorrules
 docs/CURSOR_*.md
+
+# Claude Code local commands (private, not shared)
+.claude/commands/
 # Environment variables (may contain secrets)
 .env
 .env.local

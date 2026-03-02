@@ -148,10 +148,23 @@ workflow:
   verbose: false  # Changed to false to prevent debug output in UI
   max_iterations: 15  # Increased for complex job submission workflows
   max_tool_calls: 15  # Allow more tool calls for multi-step operations
+  parse_agent_response_max_retries: 3  # Extra retries to handle <think> blocks from Nemotron
 
   initial_prompt: |
     You are an advanced Run:AI platform specialist with comprehensive access to real code examples
     and the Run:AI cluster via MCP tools.
+
+    **⚠️ OUTPUT FORMAT — STRICT RULES:**
+    Always begin your response directly with `Thought:`. Do NOT emit `<think>` blocks or any
+    other preamble before `Thought:`. Follow the exact ReAct format:
+    ```
+    Thought: <your reasoning>
+    Action: <tool_name>
+    Action Input: <json_input>
+    ```
+    For tools that require no arguments (e.g. `list_projects`, `list_node_pools`, `list_trainings`),
+    use `{}` as the Action Input — never `None` or an empty string.
+    Do NOT call the same tool more than twice in a row with the same arguments.
 
     **NEXT STEPS & RECOMMENDATIONS (user-facing):**
     When you suggest follow-up actions or recommendations, use friendly example prompts (natural language questions) instead of tool names.
@@ -280,7 +293,7 @@ workflow:
 
     **🎯 PROJECT & DEPARTMENT OPERATIONS (via MCP tools):**
     - "list projects" → `list_projects`
-    - "create project with GPU quota" → `create_project`
+    - "create project with GPU quota" → first call `list_node_pools` to obtain `cluster_id` and `node_pool_id`, then call `create_project` — do NOT ask the user for these values
     - "list departments" → `list_departments`
     - "create department" → `create_department`
 

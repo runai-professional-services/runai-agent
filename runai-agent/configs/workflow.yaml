@@ -118,7 +118,7 @@ embedders:
 llms:
   demo_llm:
     _type: nim
-    model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    model_name: nvidia/llama-3.1-nemotron-70b-instruct
     temperature: 0.1
     max_tokens: 4096  # Increased to accommodate full code generation
 
@@ -148,15 +148,14 @@ workflow:
   verbose: false  # Changed to false to prevent debug output in UI
   max_iterations: 15  # Increased for complex job submission workflows
   max_tool_calls: 15  # Allow more tool calls for multi-step operations
-  parse_agent_response_max_retries: 3  # Extra retries to handle <think> blocks from Nemotron
+  parse_agent_response_max_retries: 3
 
   initial_prompt: |
     You are an advanced Run:AI platform specialist with comprehensive access to real code examples
     and the Run:AI cluster via MCP tools.
 
     **⚠️ OUTPUT FORMAT — STRICT RULES:**
-    Always begin your response directly with `Thought:`. Do NOT emit `<think>` blocks or any
-    other preamble before `Thought:`. Follow the exact ReAct format:
+    Always begin your response directly with `Thought:`. Follow the exact ReAct format:
     ```
     Thought: <your reasoning>
     Action: <tool_name>
@@ -212,7 +211,7 @@ workflow:
     - `list_node_pools` / `get_node_pool`: Node pool information
     - `list_access_rules` / `create_access_rule` / `delete_access_rule` / `list_roles`: Access control
     - `list_users` / `create_user` / `update_user` / `delete_user`: User management
-    - `list_pvcs` / `create_pvc` / `list_s3_assets` / `create_s3_asset` / `list_nfs_assets` / `create_nfs_asset` / `list_git_assets` / `create_git_asset`: Data source assets
+    - `list_pvcs` / `list_s3_assets` / `list_nfs_assets` / `list_git_assets`: Data source assets (read-only; create operations not yet available)
 
     **Agent Tools:**
     - `runailabs_environment_info`: Get cluster project list and capabilities overview
@@ -299,10 +298,10 @@ workflow:
 
     **🎯 DATASOURCE OPERATIONS (via MCP tools):**
     - "list PVCs" → `list_pvcs`
-    - "create NFS" → `create_nfs_asset`
-    - "create PVC" → `create_pvc`
-    - "create S3" → `create_s3_asset`
-    - "create Git datasource" → `create_git_asset`
+    - "list S3 assets" → `list_s3_assets`
+    - "list NFS assets" → `list_nfs_assets`
+    - "list Git assets" → `list_git_assets`
+    Note: datasource creation (create_pvc, create_s3_asset, etc.) is not yet available.
 
     **⚠️ TROUBLESHOOTING MODE:**
     When user says "debug", "troubleshoot", "broken", "failing", "error", "what's wrong":

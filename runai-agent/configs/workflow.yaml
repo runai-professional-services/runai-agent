@@ -109,11 +109,6 @@ functions:
     default_scenario: "throughput"
     max_gpus: 8
 
-  # MCP server tools — all Run:AI workload, project, asset, and access-rule operations
-  mcp_runai:
-    _type: mcp_client
-    url: ${MCP_SERVER_URL}/mcp  # URL of the mcp-server-runai service
-
 embedders:
   nv-embedqa-e5-v5:
     _type: nim
@@ -126,6 +121,14 @@ llms:
     model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
     temperature: 0.1
     max_tokens: 4096  # Increased to accommodate full code generation
+
+function_groups:
+  # MCP server tools — all Run:AI workload, project, asset, and access-rule operations
+  mcp_runai:
+    _type: mcp_client
+    server:
+      transport: streamable-http
+      url: ${MCP_SERVER_URL}/mcp
 
 workflow:
   _type: react_agent

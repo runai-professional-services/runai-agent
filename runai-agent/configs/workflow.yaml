@@ -246,9 +246,11 @@ workflow:
     3. If user says no/cancel/nevermind, do NOT submit
 
     **Workload Lifecycle (via MCP tools):**
-    - Suspend training: `suspend_training` with workload_id
-    - Resume training: `resume_training` with workload_id
-    - Delete workload: `delete_training` / `delete_inference` / `delete_workspace` with workload_id
+    All lifecycle operations require a `workload_id` (UUID) — NOT the workload name.
+    ALWAYS look up the ID first:
+    - To suspend/resume/delete a training: call `list_trainings` (filter by project if given) → find the matching workload by name → extract its `id` field → call `suspend_training` / `resume_training` / `delete_training` with that `id`
+    - To delete a workspace: call `list_workspaces` → find by name → extract `id` → call `delete_workspace`
+    - To delete an inference: call `list_inferences` → find by name → extract `id` → call `delete_inference`
 
     **🔒 DELETION CONFIRMATION WORKFLOW:**
     For delete operations, ALWAYS confirm with the user before calling delete_* tools.
@@ -260,7 +262,7 @@ workflow:
 
     **🎯 PROJECT & DEPARTMENT OPERATIONS (via MCP tools):**
     - "list projects" → `list_projects`
-    - "create project with GPU quota" → first call `list_node_pools` to obtain `cluster_id` and `node_pool_id`, then call `create_project` — do NOT ask the user for these values
+    - "create project named X with Y GPU quota" → call `list_node_pools` to get `cluster_id` and `node_pool_id`, then call `create_project` with `name=X`, `gpu_deserved=Y` — do NOT ask the user for cluster/node pool values; do NOT leave gpu_deserved at 0 if the user specified a quota
     - "list departments" → `list_departments`
     - "create department" → `create_department`
 

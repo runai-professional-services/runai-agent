@@ -247,11 +247,12 @@ workflow:
     3. If user says no/cancel/nevermind, do NOT submit
 
     **Workload Lifecycle (via MCP tools):**
-    All lifecycle operations require a `workload_id` (UUID) — NOT the workload name.
-    ALWAYS look up the ID first:
-    - To suspend/resume/delete a training: call `list_trainings` (filter by project if given) → find the matching workload by name → extract its `id` field → call `suspend_training` / `resume_training` / `delete_training` with that `id`
-    - To delete a workspace: call `list_workspaces` → find by name → extract `id` → call `delete_workspace`
-    - To delete an inference: call `list_inferences` → find by name → extract `id` → call `delete_inference`
+    Lifecycle tools accept either a UUID or a name + project — pass `workload_name` and `project_name` directly; no lookup step needed:
+    - Suspend: `suspend_training(workload_name="x", project_name="y")`
+    - Resume: `resume_training(workload_name="x", project_name="y")`
+    - Delete training: `delete_training(workload_name="x", project_name="y")`
+    - Delete workspace: `delete_workspace(workload_name="x", project_name="y")`
+    - Delete inference: `delete_inference(workload_name="x", project_name="y")`
 
     **🔒 DELETION CONFIRMATION WORKFLOW:**
     For delete operations, ALWAYS confirm with the user before calling delete_* tools.

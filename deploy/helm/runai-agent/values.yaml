@@ -42,6 +42,29 @@ mcp-server-runai:
     type: ClusterIP
     port: 8080
 
+  # Ingress for the MCP server (disabled by default).
+  # Enable this if you want to expose the MCP server outside the cluster,
+  # e.g. so external MCP clients can connect directly.
+  #
+  # ⚠️  When enabling ingress, also set mcp.allowedHosts to your hostname to
+  # protect against DNS rebinding attacks. Leaving it empty disables host
+  # validation and accepts requests from any Host header.
+  #
+  # ingress:
+  #   enabled: true
+  #   className: nginx
+  #   host: "mcp-runai.example.com"
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-prod
+  #   tls:
+  #     - secretName: mcp-runai-tls
+  #       hosts:
+  #         - mcp-runai.example.com
+  #
+  # mcp:
+  #   allowedHosts:
+  #     - "mcp-runai.example.com"
+
 # Container image configuration
 image:
   repository: ghcr.io/runai-professional-services/runai-agent

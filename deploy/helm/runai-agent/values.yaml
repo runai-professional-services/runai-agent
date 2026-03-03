@@ -29,6 +29,23 @@ mcp-server-runai:
     pullPolicy: IfNotPresent
 
   # Run:AI credentials for the MCP server
+  #
+  # ℹ️  Sharing credentials with the agent:
+  # Both the agent and the MCP server need Run:AI credentials. To avoid
+  # maintaining two separate Kubernetes Secrets, point both at the same Secret
+  # by overriding the subchart's key names to match the agent's format:
+  #
+  #   mcp-server-runai:
+  #     runai:
+  #       baseUrl: "https://myorg.run.ai"   # still set inline; not read from secret
+  #       credentials:
+  #         existingSecret: "runai-creds"   # same Secret as runai.existingSecret below
+  #         existingSecretClientIdKey: "RUNAI_CLIENT_ID"
+  #         existingSecretClientSecretKey: "RUNAI_CLIENT_SECRET"
+  #
+  #   runai:
+  #     existingSecret: "runai-creds"       # same Secret — keys: RUNAI_CLIENT_ID,
+  #                                         # RUNAI_CLIENT_SECRET, RUNAI_BASE_URL
   runai:
     baseUrl: ""       # e.g. https://myorg.run.ai  — set via --set mcp-server-runai.runai.baseUrl=...
     credentials:

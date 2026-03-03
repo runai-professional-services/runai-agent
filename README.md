@@ -13,6 +13,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [📋 Prerequisites](#-prerequisites)
 - [🚀 Quick Start](#-quick-start)
   - [Deploy to Kubernetes with Helm](#deploy-to-kubernetes-with-helm-)
+  - [Deploy the MCP Server Standalone](#deploy-the-mcp-server-standalone-claude-cli--external-mcp-clients)
   - [Local Development](#local-development)
 - [📁 Project Structure](#-project-structure)
 - [🤖 What Can the Agent Do?](#-what-can-the-agent-do)
@@ -98,6 +99,49 @@ helm install runai-agent ./deploy/helm/runai-agent \
 - ✅ Auto-configured secrets
 
 See [Helm Chart README](deploy/helm/runai-agent/README.md) for advanced configuration options.
+
+---
+
+### Deploy the MCP Server Standalone (Claude CLI / External MCP Clients)
+
+If you want to connect an external MCP client — such as **Claude Desktop** or the **Claude CLI** — directly to your Run:AI cluster, you can deploy `mcp-server-runai` on its own without the full agent stack.
+
+```bash
+# 1. Create namespace and secret
+kubectl create namespace runai-mcp
+
+kubectl create secret generic runai-creds \
+  --namespace runai-mcp \
+  --from-literal=clientId="[YOUR_CLIENT_ID]" \
+  --from-literal=clientSecret="[YOUR_CLIENT_SECRET]"
+
+# 2. Install only the MCP server subchart
+helm install mcp-server-runai ./deploy/helm/runai-agent/charts/mcp-server-runai-*.tgz \
+  --namespace runai-mcp \
+  --set runai.baseUrl="https://your-cluster.run.ai" \
+  --set runai.credentials.existingSecret="runai-creds" \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.host="mcp-runai.example.com" \
+  --set mcp.allowedHosts[0]="mcp-runai.example.com"
+```
+
+> ⚠️ **Security:** Always set `mcp.allowedHosts` to your ingress hostname when exposing the MCP server externally. Leaving it empty disables host-header validation, which makes the server vulnerable to DNS rebinding attacks.
+
+Once deployed, add it to your Claude config (`~/.claude.json` or Claude Desktop settings):
+
+```json
+{
+  "mcpServers": {
+    "runai": {
+      "type": "http",
+      "url": "https://mcp-runai.example.com/mcp"
+    }
+  }
+}
+```
+
+You can then ask Claude directly: *"List my Run:AI projects"*, *"Submit a training job…"*, etc.
 
 ---
 

@@ -54,6 +54,7 @@ functions:
     description: "THE tool for 'Show me job performance analytics' and similar. Reports execution time trends, failure rates by project/image, recommendations, and anomaly detection (jobs running 3x longer than usual). Always use this when the user asks for job performance analytics, execution trends, how long jobs take, or failure rates."
     db_path: "${RUNAI_FAILURE_DB_PATH:-/tmp/runai_failure_history.db}"
     lookback_days: 7
+    return_direct: true  # Return full analytics report without agent summarization
 
   runailabs_job_generator:
     _type: runailabs_job_generator
@@ -131,7 +132,7 @@ function_groups:
       url: ${MCP_SERVER_URL}/mcp
 
 workflow:
-  _type: react_agent
+  _type: tool_calling_agent
   tool_names:
     - runailabs_environment_info
     - runai_kubectl_troubleshoot
@@ -145,59 +146,26 @@ workflow:
     - runai_api_docs
     - mcp_runai  # All Run:AI workload/project/asset operations via MCP server
   llm_name: demo_llm
-  verbose: false  # Changed to false to prevent debug output in UI
-  max_iterations: 15  # Increased for complex job submission workflows
-  max_tool_calls: 15  # Allow more tool calls for multi-step operations
-  parse_agent_response_max_retries: 3
+  verbose: false
+  max_iterations: 15
+  # These tools return output directly to the user without LLM post-processing
+  return_direct:
+    - runai_job_analytics
+    - runai_kubectl_troubleshoot
+    - runailabs_job_generator
+    - runai_failure_analyzer
+    - runai_nim_benchmark
+    - runai_proactive_monitor
 
-  initial_prompt: |
+  system_prompt: |
     You are an advanced Run:AI platform specialist with comprehensive access to real code examples
     and the Run:AI cluster via MCP tools.
-
-    **⚠️ OUTPUT FORMAT — STRICT RULES:**
-    Always begin your response directly with `Thought:`. Follow the exact ReAct format:
-    ```
-    Thought: <your reasoning>
-    Action: <tool_name>
-    Action Input: <json_input>
-    ```
-    For tools that require no arguments (e.g. `list_projects`, `list_node_pools`, `list_trainings`),
-    use `{}` as the Action Input — never `None` or an empty string.
-    Do NOT call the same tool more than twice in a row with the same arguments.
 
     **NEXT STEPS & RECOMMENDATIONS (user-facing):**
     When you suggest follow-up actions or recommendations, use friendly example prompts (natural language questions) instead of tool names.
     - GOOD: "You can ask: 'Can you show me job analytics for project-03?'" or "Try: Show me running trainings"
     - BAD: "Use runai_job_analytics" or "Use the list_trainings function"
     Apply this to any "Next steps", "Recommendations", or "Would you like to..." suggestions in your replies.
-
-    **CODE GENERATION:**
-    When user asks for job code generation:
-    - Call `runailabs_job_generator` directly - it automatically fetches real examples from GitHub
-    - The generator uses official Run:AI SDK examples for accurate, up-to-date code
-
-    ⚠️ **CRITICAL: Return COMPLETE code - DO NOT SUMMARIZE**
-    When runailabs_job_generator returns code:
-    1. The tool response contains COMPLETE Python code with imports
-    2. You MUST copy the ENTIRE response including all code
-    3. Your Final Answer MUST include the full Python script
-    4. DO NOT extract just the job_spec - users need the COMPLETE executable script
-    5. DO NOT say "the generated code is..." - SHOW the actual code
-
-    **Example workflow for code generation:**
-    ```
-    Thought: User wants distributed training job code.
-    Action: runailabs_job_generator
-    Action Input: {"input_message": "Generate a distributed training job with 4 GPUs"}
-    Observation: Here is the complete Python code... ```python\nfrom runai...\n[FULL CODE]\n```
-
-    Thought: I now know the final answer. The tool gave me complete code.
-    Final Answer: Here is the complete Python code... ```python\nfrom runai...\n[FULL CODE]\n```
-
-    WRONG ❌: "The generated job specification is: { 'name': '...' }"
-    WRONG ❌: Extracting just the JSON from inside the code
-    RIGHT ✅: Show the COMPLETE ```python code block``` as-is
-    ```
 
     **Available Tools:**
 
@@ -215,13 +183,13 @@ workflow:
 
     **Agent Tools:**
     - `runailabs_environment_info`: Get cluster project list and capabilities overview
-    - `runai_kubectl_troubleshoot`: 🆕 Deep troubleshooting with kubectl (logs, events, diagnosis)
-    - `runai_proactive_monitor`: 🔔 Proactive monitoring & auto-troubleshooting
-    - `runai_failure_analyzer`: 🔬 Advanced failure analysis (pattern recognition, remediation)
-    - `runai_job_analytics`: 📊 Job performance analytics (trends, failure rates, anomaly detection)
+    - `runai_kubectl_troubleshoot`: Deep troubleshooting with kubectl (logs, events, diagnosis)
+    - `runai_proactive_monitor`: Proactive monitoring & auto-troubleshooting
+    - `runai_failure_analyzer`: Advanced failure analysis (pattern recognition, remediation)
+    - `runai_job_analytics`: Job performance analytics (trends, failure rates, anomaly detection)
     - `runailabs_job_generator`: Generate job submission code (fetches real examples from GitHub)
-    - `runai_nim_benchmark`: 🚀 NIM LLM Benchmarking (run GPU benchmarks on H100, H200, A100)
-    - `runai_docs_search`: 📚 Search Run:AI documentation
+    - `runai_nim_benchmark`: NIM LLM Benchmarking (run GPU benchmarks on H100, H200, A100)
+    - `runai_docs_search`: Search Run:AI documentation
     - `runai_docs_helper`: Direct links to known Run:AI documentation topics
 
     **📊 JOB PERFORMANCE ANALYTICS - USE runai_job_analytics:**
@@ -312,11 +280,7 @@ workflow:
 
     **⚠️ TROUBLESHOOTING MODE:**
     When user says "debug", "troubleshoot", "broken", "failing", "error", "what's wrong":
-
-    1. Call `runai_kubectl_troubleshoot` ONCE with the job_name and project
-    2. After receiving the tool response, immediately provide Final Answer with the COMPLETE report
-    3. DO NOT call any other tools
-    4. DO NOT summarize - return the full troubleshooting report exactly as provided
+    - Call `runai_kubectl_troubleshoot` once with the job_name and project
 
     **Job analytics & monitoring follow-up:**
     If you just showed job performance analytics with "no data" and the user says "yes", "help me set that up", "set up monitoring", or similar, they mean: start proactive monitoring. Call runai_proactive_monitor with action="start".

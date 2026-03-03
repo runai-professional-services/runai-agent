@@ -25,7 +25,7 @@ Requires:
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import Field
 from nat.builder.builder import Builder
@@ -33,7 +33,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import call_mcp_tool, logger
+from ..utils import call_mcp_tool, _coerce_optional_int, _coerce_optional_bool, _normalize_optional_str_none, logger
 
 
 # ── GPU Profiles ─────────────────────────────────────────────────────────────
@@ -257,10 +257,10 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
         scenario: Optional[str] = None,
         model: Optional[str] = None,
         project: Optional[str] = None,
-        gpu_count: Optional[int] = None,
+        gpu_count: Optional[Union[int, str]] = None,
         image: Optional[str] = None,
         node_pool: Optional[str] = None,
-        dry_run: Optional[bool] = None,
+        dry_run: Optional[Union[bool, str]] = None,
         confirmed: bool = False,
     ) -> str:
         """
@@ -281,6 +281,17 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
             Structured benchmark status/results as a formatted string.
         """
         try:
+            # Coerce optional params that LLM may pass as "null" strings
+            gpu_type = _normalize_optional_str_none(gpu_type)
+            scenario = _normalize_optional_str_none(scenario)
+            model = _normalize_optional_str_none(model)
+            project = _normalize_optional_str_none(project)
+            image = _normalize_optional_str_none(image)
+            node_pool = _normalize_optional_str_none(node_pool)
+            if isinstance(gpu_count, str):
+                gpu_count = None if gpu_count.strip().lower() in ("none", "null", "") else (int(gpu_count) if gpu_count.strip().isdigit() else None)
+            dry_run = _coerce_optional_bool(dry_run)
+
             # ── 1. Normalise & apply defaults ────────────────────────────
             gpu_key = _normalise_gpu_type(gpu_type, config.default_gpu_type)
             scenario_key = _normalise_scenario(scenario, config.default_scenario)

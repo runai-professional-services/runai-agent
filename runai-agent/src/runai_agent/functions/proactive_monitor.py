@@ -16,7 +16,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import _get_secure_runai_config, _coerce_optional_int, _workload_image, logger
+from ..utils import _get_secure_runai_config, _coerce_optional_int, _normalize_optional_str_none, _workload_image, logger
 
 
 class RunaiProactiveMonitorConfig(FunctionBaseConfig, name="runai_proactive_monitor"):
@@ -113,6 +113,7 @@ async def runai_proactive_monitor(config: RunaiProactiveMonitorConfig, builder: 
             Status message or monitoring report
         """
         duration_minutes = _coerce_optional_int(duration_minutes, 0)
+        project = _normalize_optional_str_none(project)
 
         if action == "status":
             return f"""

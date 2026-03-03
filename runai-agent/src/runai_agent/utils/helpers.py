@@ -63,8 +63,8 @@ def _get_secure_runai_config():
 
 
 def _coerce_optional_int(value: Optional[Union[int, str]], default: int) -> int:
-    """Coerce LLM tool input to int; treat None/'None'/empty as missing and return default."""
-    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "")):
+    """Coerce LLM tool input to int; treat None/'None'/'null'/empty as missing and return default."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "null", "")):
         return default
     try:
         return int(value)
@@ -72,12 +72,23 @@ def _coerce_optional_int(value: Optional[Union[int, str]], default: int) -> int:
         return default
 
 
+def _coerce_optional_bool(value: Optional[Union[bool, str]]) -> Optional[bool]:
+    """Coerce LLM tool input to Optional[bool]; treat 'null'/'None'/empty as None."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "null", "")):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "yes", "1")
+    return bool(value)
+
+
 def _normalize_optional_str_none(value: Optional[Any]) -> Optional[str]:
-    """Treat string 'None' or empty as None; otherwise return value as str (for project, etc.)."""
+    """Treat string 'None'/'null'/empty as None; otherwise return value as str (for project, etc.)."""
     if value is None:
         return None
     s = str(value).strip().lower()
-    if s in ("none", ""):
+    if s in ("none", "null", ""):
         return None
     return str(value).strip()
 

@@ -272,7 +272,8 @@ workflow:
     Note: datasource creation (create_pvc, create_s3_asset, etc.) is not yet available.
 
     **🎯 ACCESS CONTROL OPERATIONS (via MCP tools):**
-    - "what roles are available" / "list roles" / "show me roles" → `list_roles`
+    When the user asks about roles, access rules, or users, ALWAYS call the MCP tool — do NOT search docs:
+    - "what roles are available" / "list roles" / "show me roles" → call `list_roles` (returns live data from the cluster)
     - "list access rules" / "show access rules" → `list_access_rules`
     - "list users" / "show all users" → `list_users`
     - "grant role" / "create access rule" → first call `list_roles` and `list_users` to get IDs, then call `create_access_rule`

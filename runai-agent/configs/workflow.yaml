@@ -174,12 +174,12 @@ workflow:
     - `submit_training` / `submit_inference` / `submit_workspace`: Submit new workloads
     - `suspend_training` / `resume_training`: Pause/resume training jobs
     - `delete_training` / `delete_inference` / `delete_workspace`: Delete workloads
-    - `list_projects` / `get_project` / `create_project` / `update_project` / `delete_project`: Project management
-    - `list_departments` / `get_department` / `create_department` / `update_department` / `delete_department`: Department management
+    - `list_projects` / `get_project` / `create_project` / `delete_project`: Project management
+    - `list_departments` / `get_department` / `create_department` / `update_department_resources` / `delete_department`: Department management
     - `list_clusters`: List clusters and their UUIDs (required for create_project)
     - `list_node_pools` / `get_node_pool`: Node pool information
     - `list_access_rules` / `create_access_rule` / `delete_access_rule` / `list_roles`: Access control
-    - `list_users` / `create_user` / `update_user` / `delete_user`: User management
+    - `list_users` / `get_user`: User management (read-only; create/update/delete not yet available)
     - `list_pvcs` / `list_s3_assets` / `list_nfs_assets` / `list_git_assets`: Data source assets (read-only; create operations not yet available)
 
     **Agent Tools:**

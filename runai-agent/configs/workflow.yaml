@@ -263,7 +263,7 @@ workflow:
 
     **🎯 PROJECT & DEPARTMENT OPERATIONS (via MCP tools):**
     - "list projects" → `list_projects`
-    - "create project named X with Y GPU quota" → call `list_clusters` to get the cluster UUID (use the `uuid` field); also call `list_node_pools` to get `node_pool_id`; then call `create_project` with `name=X`, `cluster_id=<uuid>`, `gpu_deserved=Y` — do NOT ask the user for cluster/node pool values; do NOT leave gpu_deserved at 0 if the user specified a quota
+    - "create project named X with Y GPU quota" → call `create_project` with `name=X` and `gpu_deserved=Y` — cluster and node pool are auto-discovered; do NOT pass cluster_id or node_pool_id; do NOT leave gpu_deserved at 0 if the user specified a quota
     - "list departments" → `list_departments`
     - "create department" → `create_department`
 

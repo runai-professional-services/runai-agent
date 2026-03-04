@@ -53,3 +53,6 @@ from runai_agent.functions.runai_docs_helper import runai_docs_helper
 
 # Import NIM benchmark function (NVIDIA NIM LLM benchmarking)
 from runai_agent.functions.nim_benchmark import runai_nim_benchmark
+
+# Import resource listing function (formatted output for list operations)
+from runai_agent.functions.list_resources import runai_list_resources

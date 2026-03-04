@@ -3,7 +3,6 @@ Run:AI Documentation Helper - Direct links to common topics.
 This complements webpage_query by providing direct access to known documentation pages.
 """
 
-from typing import Dict, List
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 from nat.builder.builder import Builder

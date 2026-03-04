@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Import requests for GitHub API calls
 try:
-    import requests
+    import requests  # noqa: F401
     REQUESTS_AVAILABLE = True
 except ImportError:
     logger.warning("Requests not available. Repository indexing will be disabled.")

@@ -33,7 +33,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import call_mcp_tool, _coerce_optional_int, _coerce_optional_bool, _normalize_optional_str_none, logger
+from ..utils import call_mcp_tool, _coerce_optional_bool, _normalize_optional_str_none, logger
 
 
 # ── GPU Profiles ─────────────────────────────────────────────────────────────

@@ -210,7 +210,7 @@ Project `{job_project}` is not in the allowed list.
             # Get pod by workload label
             result = subprocess.run(
                 ["kubectl", "get", "pods", "-n", namespace, 
-                 f"-l", f"workloadName={job_name}",
+                 "-l", f"workloadName={job_name}",
                  "-o", "wide"],
                 capture_output=True,
                 text=True,
@@ -328,7 +328,7 @@ Possible reasons:
                 if result2.returncode == 0 and result2.stdout.strip():
                     lines = result2.stdout.splitlines()
                     header = lines[0] if lines else ""
-                    matches = [l for l in lines[1:] if job_name in l]
+                    matches = [line for line in lines[1:] if job_name in line]
                     result_stdout = "\n".join([header] + matches) if matches else ""
                     # Replace result stdout for the check below
                     class _R:

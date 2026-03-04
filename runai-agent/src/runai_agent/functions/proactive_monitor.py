@@ -155,7 +155,7 @@ pip install runai-sdk
 ```
 """
         
-        logger.info(f"🚀 Starting proactive monitoring...")
+        logger.info("🚀 Starting proactive monitoring...")
         logger.info(f"   Projects: {project_filter or 'ALL'}")
         logger.info(f"   Poll interval: {config.poll_interval_seconds}s")
         logger.info(f"   Duration: {duration_minutes}m" + (" (default for chat/CLI)" if defaulted else ""))
@@ -453,7 +453,7 @@ pip install runai-sdk
                         containers = pod_data.get("spec", {}).get("containers", [])
                         if containers:
                             pod_info["container_image"] = containers[0].get("image")
-                    except:
+                    except Exception:
                         pass
                     
                     # Get pod status (human-readable)

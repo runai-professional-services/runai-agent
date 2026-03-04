@@ -50,7 +50,7 @@ async def runailabs_job_generator(config: RunailabsJobGeneratorConfig, builder: 
                     logger.info("🔍 Fetching runapy examples from GitHub...")
                     
                     # Fetch examples (uses cache if available)
-                    examples = await examples_fetcher.get_examples()
+                    await examples_fetcher.get_examples()
                     
                     # Determine category based on job type
                     if any(word in input_lower for word in ['distributed', 'multi-gpu', 'parallel']):

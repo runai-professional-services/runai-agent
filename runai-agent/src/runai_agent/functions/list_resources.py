@@ -3,7 +3,6 @@
 import os
 from typing import Optional
 
-from pydantic import Field
 from nat.builder.builder import Builder
 from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function

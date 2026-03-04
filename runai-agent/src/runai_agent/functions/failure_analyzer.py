@@ -9,10 +9,8 @@ This module provides intelligent failure analysis capabilities:
 - Knowledge graph of failure → solution mappings
 """
 
-import os
 import json
 import sqlite3
-import asyncio
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple, Union
 from collections import defaultdict, Counter
@@ -22,7 +20,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import sanitize_input, _get_secure_runai_config, _search_workload_by_name_helper, _coerce_optional_int, _normalize_optional_str_none, logger
+from ..utils import _coerce_optional_int, _normalize_optional_str_none, logger
 
 
 class FailureAnalyzerConfig(FunctionBaseConfig, name="runai_failure_analyzer"):
@@ -572,7 +570,7 @@ class FailurePatternAnalyzer:
             try:
                 timestamp = datetime.fromisoformat(f['timestamp'])
                 hour_failures[timestamp.hour] += 1
-            except:
+            except Exception:
                 continue
         
         # Find peak hours

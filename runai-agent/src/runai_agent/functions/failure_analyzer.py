@@ -9,12 +9,10 @@ This module provides intelligent failure analysis capabilities:
 - Knowledge graph of failure → solution mappings
 """
 
-import os
 import json
 import sqlite3
-import asyncio
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union
 from collections import defaultdict, Counter
 from pydantic import Field
 from nat.builder.builder import Builder
@@ -22,7 +20,7 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import sanitize_input, _get_secure_runai_config, _search_workload_by_name_helper, logger
+from ..utils import _coerce_optional_int, _normalize_optional_str_none, logger
 
 
 class FailureAnalyzerConfig(FunctionBaseConfig, name="runai_failure_analyzer"):
@@ -572,7 +570,7 @@ class FailurePatternAnalyzer:
             try:
                 timestamp = datetime.fromisoformat(f['timestamp'])
                 hour_failures[timestamp.hour] += 1
-            except:
+            except Exception:
                 continue
         
         # Find peak hours
@@ -793,23 +791,25 @@ async def runai_failure_analyzer(config: FailureAnalyzerConfig, builder: Builder
         project: Optional[str] = None,
         job_name: Optional[str] = None,
         failure_type: Optional[str] = None,
-        lookback_days: Optional[int] = None
+        lookback_days: Optional[Union[int, str]] = None
     ) -> str:
         """
         Analyze failures and provide insights.
-        
+
         Actions:
         - analyze: Comprehensive pattern analysis
         - record: Record a new failure event (used by monitoring)
         - remediate: Get remediation suggestions for a specific failure
         - stats: Get failure statistics
         """
-        
+        project = _normalize_optional_str_none(project)
+        job_name = _normalize_optional_str_none(job_name)
+        failure_type = _normalize_optional_str_none(failure_type)
+        days = _coerce_optional_int(lookback_days, config.lookback_days)
+
         # Validate project access
         if project and "*" not in config.allowed_projects and project not in config.allowed_projects:
             return f"❌ Access denied to project '{project}'"
-        
-        days = lookback_days or config.lookback_days
         
         if action == "analyze":
             return await _analyze_patterns(project, days)

@@ -58,10 +58,8 @@ export async function submitCommand(prompt: string, options: {
       enhancedPrompt = `${sanitizedPrompt} in project ${options.project}`;
     }
     
-    // Add confirmation preference
-    if (options.confirm === false) {
-      enhancedPrompt = `${enhancedPrompt}. Skip confirmation and submit directly.`;
-    }
+    // Always submit directly via MCP tool — skip job generator and confirmation prompts
+    enhancedPrompt = `${enhancedPrompt}. Use the MCP submit tool directly and submit now without generating a script or asking for confirmation.`;
     
     logger.updateSpinner('Agent is processing your request...');
     

@@ -10,6 +10,78 @@ global:
   # Deployment name for the agent
   deploymentName: "runai-agent"
 
+# MCP server configuration
+# When mcp-server-runai.enabled=true (default), the URL is auto-derived from the subchart's
+# ClusterIP service. Override url only if you are pointing at an existing MCP server deployment.
+mcpServer:
+  url: ""  # Leave empty to auto-derive from the subchart; set explicitly to use an existing deployment
+
+# ── mcp-server-runai subchart ────────────────────────────────────────────────
+# The agent requires mcp-server-runai for all Run:AI platform operations.
+# Set enabled=false if you already have mcp-server-runai deployed separately,
+# then set mcpServer.url above to point to it.
+mcp-server-runai:
+  enabled: true
+
+  image:
+    repository: ghcr.io/runai-professional-services/mcp-server-runai
+    tag: ""           # defaults to Chart.appVersion
+    pullPolicy: IfNotPresent
+
+  # Run:AI credentials for the MCP server
+  #
+  # ℹ️  Sharing credentials with the agent:
+  # Both the agent and the MCP server need Run:AI credentials. To avoid
+  # maintaining two separate Kubernetes Secrets, point both at the same Secret
+  # by overriding the subchart's key names to match the agent's format:
+  #
+  #   mcp-server-runai:
+  #     runai:
+  #       baseUrl: "https://myorg.run.ai"   # still set inline; not read from secret
+  #       credentials:
+  #         existingSecret: "runai-creds"   # same Secret as runai.existingSecret below
+  #         existingSecretClientIdKey: "RUNAI_CLIENT_ID"
+  #         existingSecretClientSecretKey: "RUNAI_CLIENT_SECRET"
+  #
+  #   runai:
+  #     existingSecret: "runai-creds"       # same Secret — keys: RUNAI_CLIENT_ID,
+  #                                         # RUNAI_CLIENT_SECRET, RUNAI_BASE_URL
+  runai:
+    baseUrl: ""       # e.g. https://myorg.run.ai  — set via --set mcp-server-runai.runai.baseUrl=...
+    credentials:
+      clientId: ""    # set via --set mcp-server-runai.runai.credentials.clientId=...
+      clientSecret: "" # set via --set mcp-server-runai.runai.credentials.clientSecret=...
+      existingSecret: ""  # recommended: name of a pre-existing Secret with clientId/clientSecret keys
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # Ingress for the MCP server (disabled by default).
+  # Enable this if you want to expose the MCP server outside the cluster,
+  # e.g. so external MCP clients can connect directly.
+  #
+  # ⚠️  When enabling ingress, also set mcp.allowedHosts to your hostname to
+  # protect against DNS rebinding attacks. Leaving it empty disables host
+  # validation and accepts requests from any Host header.
+  #
+  # ingress:
+  #   enabled: true
+  #   className: nginx
+  #   host: "mcp-runai.example.com"
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-prod
+  #   tls:
+  #     - secretName: mcp-runai-tls
+  #       hosts:
+  #         - mcp-runai.example.com
+  #
+  # mcp:
+  #   allowedHosts:
+  #     - "mcp-runai.example.com"
+
 # Container image configuration
 image:
   repository: ghcr.io/runai-professional-services/runai-agent

@@ -5,7 +5,7 @@
 [![Release](https://github.com/runai-professional-services/runai-agent/workflows/Release/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/release.yml)
 [![Helm](https://github.com/runai-professional-services/runai-agent/workflows/Publish%20Helm%20Chart/badge.svg)](https://github.com/runai-professional-services/runai-agent/actions/workflows/helm-publish.yml)
 
-An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT), featuring a modern web UI and specialized tools for Run:Ai cluster management.
+An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT), featuring a modern web UI and specialized tools for Run:AI cluster management. All Run:AI platform operations — job submission, project management, workload lifecycle, datasources, and more — are handled by the **`mcp-server-runai` MCP server**, which the agent communicates with over the Model Context Protocol.
 
 ## 📑 Table of Contents
 
@@ -13,6 +13,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [📋 Prerequisites](#-prerequisites)
 - [🚀 Quick Start](#-quick-start)
   - [Deploy to Kubernetes with Helm](#deploy-to-kubernetes-with-helm-)
+  - [Deploy the MCP Server Standalone](#deploy-the-mcp-server-standalone-claude-cli--external-mcp-clients)
   - [Local Development](#local-development)
 - [📁 Project Structure](#-project-structure)
 - [🤖 What Can the Agent Do?](#-what-can-the-agent-do)
@@ -21,7 +22,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [🔔 Proactive Monitoring & Auto-Troubleshooting](#-proactive-monitoring--auto-troubleshooting)
 - [🔬 Advanced Failure Analysis](#-advanced-failure-analysis)
 - [📊 Job Performance Analytics](#-job-performance-analytics)
-- [🧠 REST API Executor (Datasource Management)](#-rest-api-executor-datasource-management)
+- [🗄️ Datasource Operations](#️-datasource-operations)
 - [🏗️ Architecture](#️-architecture)
 - [🔧 Configuration](#-configuration)
 - [📚 Documentation](#-documentation)
@@ -34,29 +35,25 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 
 ## 🎯 Features
 
-- 🤖 **Intelligent Agent** - Powered by NVIDIA Llama 3.3 Nemotron Super (49B) with ReAct reasoning
+- 🤖 **Intelligent Agent** - Powered by `meta/llama-3.3-70b-instruct` via NVIDIA NIM with ReAct reasoning
 - 💬 **Web UI** - Beautiful, responsive chat interface with real-time streaming
-- 🔧 **Run:Ai Integration** - Specialized tools for cluster management and job creation
-- 🚀 **Direct Job Submission** - Submit workloads to Run:AI with built-in safety validations
-- 📦 **Batch Job Submission** - Submit multiple jobs (training, distributed, workspace) in one operation
-- 🔄 **Unified Lifecycle Management** - Suspend, resume, and delete any workload type with one tool
-- 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with Slack alerts
+- 🔧 **Run:AI Integration via MCP Server** - All platform operations (projects, workloads, node pools, departments, users, access rules, datasources) via `mcp-server-runai`
+- 🚀 **Job Submission** - Submit training, inference, and workspace workloads with built-in confirmation workflow
+- 🔄 **Unified Lifecycle Management** - Suspend, resume, and delete any workload type
+- 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with optional Slack alerts
 - 🔬 **Advanced Failure Analysis** - Pattern recognition, cross-job correlation, and automated remediation suggestions
 - 📊 **Job Performance Analytics** - Execution time trends, failure rates by project/image, recommendations, anomaly detection
-- 📊 **Cluster Resource Summary** - GPU quota and in use per project, cluster totals ("How is my cluster doing?")
-- 🗑️ **Two-Step Confirmation** - Safe deletion with explicit user confirmation
-- ⚡ **Template-Based API Executor** - Fast, deterministic datasource management (NFS, PVC, Git, S3 with CRUD operations) - 20-50x faster than LLM
-- 🔍 **Job Status & Troubleshooting** - Check job status and get detailed kubectl diagnostics
-- 🩺 **Deep Troubleshooting** - Get pod logs, events, and AI-powered diagnosis for broken jobs
+- 📊 **Cluster Resource Summary** - GPU quota and utilization per project, cluster totals
+- 🩺 **Deep Troubleshooting** - Pod logs, events, and AI-powered diagnosis via kubectl
+- 🚀 **NIM LLM Benchmarking** - Run GPU benchmarks on H100, H200, A100 using NIM inference
 - 📚 **Documentation Search** - Ask questions about Run:AI features and get answers from official docs
-- 🧠 **Agent Reasoning** - Optional intermediate steps view for debugging (disabled by default)
-- 🔒 **Auto-Configuration** - Zero-config deployment in Run:Ai environments
+- 🧠 **Code Generation** - Generate Python job submission code from real GitHub examples
 - 🌙 **Dark/Light Theme** - Choose your preferred appearance
 
 ## 📋 Prerequisites
 
-- Nvidia API Key for NIMs. [Nvidia Build](https://build.nvidia.com)
-- Run:Ai environment with a provisioned `Application` for API access. [How to Create a Run:Ai Application](https://run-ai-docs.nvidia.com/self-hosted/2.22/infrastructure-setup/authentication/applications)
+- NVIDIA API Key for NIMs. [NVIDIA Build](https://build.nvidia.com)
+- Run:AI environment with a provisioned `Application` for API access. [How to Create a Run:AI Application](https://run-ai-docs.nvidia.com/self-hosted/2.22/infrastructure-setup/authentication/applications)
 - Docker Registry
 - Docker CLI
 
@@ -70,7 +67,7 @@ export KMP_DUPLICATE_LIB_OK=TRUE
 
 ### Deploy to Kubernetes with Helm 🎯
 
-Deploy the agent with all features enabled using Helm (recommended deployment method):
+Deploy the agent with all features enabled using Helm (recommended deployment method). The Helm chart includes `mcp-server-runai` as an optional subchart — enabled by default.
 
 ```bash
 # 1. Create namespace and secrets
@@ -95,12 +92,56 @@ helm install runai-agent ./deploy/helm/runai-agent \
 ```
 
 **Features Included:**
+- ✅ `mcp-server-runai` subchart (all Run:AI platform operations)
 - ✅ Monitoring sidecar (continuous failure detection)
 - ✅ Persistent failure database (2Gi PVC)
 - ✅ RBAC for kubectl access
 - ✅ Auto-configured secrets
 
 See [Helm Chart README](deploy/helm/runai-agent/README.md) for advanced configuration options.
+
+---
+
+### Deploy the MCP Server Standalone (Claude CLI / External MCP Clients)
+
+If you want to connect an external MCP client — such as **Claude Desktop** or the **Claude CLI** — directly to your Run:AI cluster, you can deploy `mcp-server-runai` on its own without the full agent stack.
+
+```bash
+# 1. Create namespace and secret
+kubectl create namespace runai-mcp
+
+kubectl create secret generic runai-creds \
+  --namespace runai-mcp \
+  --from-literal=clientId="[YOUR_CLIENT_ID]" \
+  --from-literal=clientSecret="[YOUR_CLIENT_SECRET]"
+
+# 2. Install only the MCP server subchart
+helm install mcp-server-runai ./deploy/helm/runai-agent/charts/mcp-server-runai-*.tgz \
+  --namespace runai-mcp \
+  --set runai.baseUrl="https://your-cluster.run.ai" \
+  --set runai.credentials.existingSecret="runai-creds" \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.host="mcp-runai.example.com" \
+  --set mcp.allowedHosts[0]="mcp-runai.example.com"
+```
+
+> ⚠️ **Security:** Always set `mcp.allowedHosts` to your ingress hostname when exposing the MCP server externally. Leaving it empty disables host-header validation, which makes the server vulnerable to DNS rebinding attacks.
+
+Once deployed, add it to your Claude config (`~/.claude.json` or Claude Desktop settings):
+
+```json
+{
+  "mcpServers": {
+    "runai": {
+      "type": "http",
+      "url": "https://mcp-runai.example.com/mcp"
+    }
+  }
+}
+```
+
+You can then ask Claude directly: *"List my Run:AI projects"*, *"Submit a training job…"*, etc.
 
 ---
 
@@ -114,6 +155,7 @@ export NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]"
 export RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]"
 export RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]"
 export RUNAI_BASE_URL="https://your-cluster.run.ai"
+export MCP_SERVER_URL="http://localhost:8080"  # Point to a running mcp-server-runai instance
 
 # 2. Run the agent
 ./deploy/start-local.sh
@@ -133,23 +175,21 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
+  -e MCP_SERVER_URL="[YOUR_MCP_SERVER_URL]" \
   -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
   ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
 **Access the UI:** http://localhost:3000
 
-**Tip:** With the DB path set, start monitoring from the chat or CLI (e.g. "Start monitoring all jobs") so failure history and job performance analytics get populated. The database file is created on first use (when you ask for analytics or when monitoring records an event). To create it immediately, ask once: "Show me job performance analytics." Backend logs will show `✓ Failure database initialized at /tmp/runai_failure_history.db` when the DB is first used.
-
-**Check container logs (agent, monitoring, errors):**
+**Check container logs:**
 ```bash
-# Container ID
 docker ps
 
 # All output (nginx + backend + frontend)
 docker logs <container_id> 2>&1
 
-# Backend (NAT agent) logs only – monitoring and analytics messages appear here
+# Backend (NAT agent) logs only
 docker exec <container_id> tail -n 200 /var/log/supervisor/backend.out.log
 docker exec <container_id> tail -n 200 /var/log/supervisor/backend.err.log
 ```
@@ -164,37 +204,12 @@ docker run -p 3000:3000 -p 8000:8000 \
   -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
   -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
   -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
+  -e MCP_SERVER_URL="[YOUR_MCP_SERVER_URL]" \
   -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
-  -e KUBECONFIG="/root/.kube/config" \
-  -v "/path/to/your/kubeconfig.yaml:/root/.kube/config:ro" \
-  ghcr.io/runai-professional-services/runai-agent:latest
-```
-
-**Example:**
-```bash
-# If your kubeconfig is at ~/.kube/config
-docker run -p 3000:3000 -p 8000:8000 \
-  -e NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]" \
-  -e RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
-  -e RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
-  -e RUNAI_BASE_URL="[YOUR_RUNAI_BASE_URL]" \
-  -e RUNAI_FAILURE_DB_PATH="/tmp/runai_failure_history.db" \
-  -e GITHUB_TOKEN="[YOUR_GITHUB_TOKEN]" \
   -e KUBECONFIG="/root/.kube/config" \
   -v "$HOME/.kube/config:/root/.kube/config:ro" \
   ghcr.io/runai-professional-services/runai-agent:latest
 ```
-
-**Important:**
-- The `-e KUBECONFIG="/root/.kube/config"` tells kubectl where to find the config INSIDE the container
-- The `-v "HOST_PATH:/root/.kube/config:ro"` mounts your HOST kubeconfig to the container's expected path
-- Replace `HOST_PATH` with the absolute path to your kubeconfig file
-
-**What this enables:**
-- ✅ Job code generation (requires only `NVIDIA_API_KEY`)
-- ✅ Job submission (requires Run:AI credentials)
-- ✅ Job status checking (requires Run:AI credentials)
-- ✅ Kubectl troubleshooting with logs and events (requires `KUBECONFIG`)
 
 **Note:** When deployed in Kubernetes, the agent automatically uses the ServiceAccount for kubectl access (no KUBECONFIG needed).
 
@@ -232,7 +247,7 @@ runai-cli chat  # Interactive mode
 - 🔄 **Switch agents** - Easily switch between prod/staging/local
 - 📊 **Full functionality** - All agent features available remotely
 
-### Your Ingress Configuration
+### Ingress Configuration
 
 ```yaml
 # Expose port 3000 - Nginx handles internal routing to backend (8000)
@@ -257,148 +272,119 @@ spec:
 ```
 ├── apps/
 │   └── runai-agent-test-frontend/    # Next.js Web UI
-├── runai-agent/         # Custom Run:AI agent (uses NAT 1.3.1 from PyPI)
-│   ├── config/
-│   │   └── workflow.yaml              # Agent configuration & function definitions
-│   ├── src/
-│   │   └── runai_agent/
-│   │       ├── functions/             # Agent function modules
-│   │       │   ├── environment_info.py            # Environment status & listing
-│   │       │   ├── job_generator.py               # Python code generation from GitHub
-│   │       │   ├── job_status.py                  # Job status checking
-│   │       │   ├── job_submit.py                  # Single-node training job submission
-│   │       │   ├── job_submit_distributed.py     # Distributed/multi-node training
-│   │       │   ├── job_submit_workspace.py        # Interactive workspace submission
-│   │       │   ├── job_submit_batch.py            # Batch submission (multiple jobs)
-│   │       │   ├── kubectl_troubleshoot.py        # Deep kubectl troubleshooting
-│   │       │   ├── template_executor.py           # Template-based API executor (fast!)
-│   │       │   ├── proactive_monitor.py           # Proactive monitoring & auto-troubleshooting
-│   │       │   └── workload_lifecycle.py          # Suspend/resume/delete jobs
-│   │       ├── templates/             # Jinja2 templates for API operations
-│   │       │   ├── _base/                   # Shared auth & lookup templates
-│   │       │   ├── datasource/              # NFS, PVC, Git, S3 templates
-│   │       │   ├── org_unit/                # Project, Department templates
-│   │       │   └── generic/                 # Universal list/get/delete
-│   │       ├── template_manager.py    # Template rendering & execution
-│   │       ├── rest_api/              # REST API integration
-│   │       │   ├── swagger_fetcher.py       # OpenAPI schema fetching
-│   │       │   └── endpoint_finder.py       # Semantic endpoint discovery
-│   │       ├── utils/                 # Shared utilities
-│   │       │   └── helpers.py               # Security, validation, workload search
-│   │       └── register.py            # Function registration with NAT
-│   ├── pyproject.toml                 # Package config (NAT 1.3.1 dependency)
-│   └── README.md                      # Custom agent documentation
-├── docs/                               # Documentation
-│   ├── QUICKSTART.md                  # Getting started guide
-│   ├── DEPLOYMENT.md                  # Deployment instructions
-│   ├── SIDECAR_DEPLOYMENT.md          # Production sidecar deployment guide
-│   ├── PROACTIVE_MONITORING.md        # Proactive monitoring & auto-troubleshooting guide
-│   └── FAILURE_ANALYSIS.md            # Advanced failure analysis guide
-├── deploy/                             # Deployment configurations
-│   ├── build-docker.sh                 # Docker build script
-│   ├── Dockerfile                      # Simplified combined Docker image (UI + Backend)
-│   ├── nginx.conf                      # Static Nginx configuration
-│   ├── SIMPLIFICATION_SUMMARY.md       # Architecture simplification details
-│   ├── helm/                           # Helm chart (recommended deployment)
-│   │   └── runai-agent/                   # Production-ready Helm chart
-│   ├── k8s/                            # Kubernetes manifests (alternative to Helm)
-│   │   ├── rbac.yaml                      # RBAC for kubectl access
-│   │   ├── runai-agent-with-sidecar.yaml  # Agent with monitoring sidecar
-│   │   └── failure-analysis-pvc.yaml      # PVC for shared failure database
-│   └── start-local.sh                  # Quick start script for local development
-├── runai-cli/                          # TypeScript CLI for remote agent connection
+├── runai-agent/                      # NAT agent (nvidia-nat>=1.3.0)
+│   ├── configs/
+│   │   └── workflow.yaml             # Agent configuration, LLM, tool definitions
+│   └── src/
+│       └── runai_agent/
+│           ├── functions/            # Agent-side tool modules
+│           │   ├── environment_info.py    # Cluster overview & project listing
+│           │   ├── failure_analyzer.py    # Pattern recognition & remediation
+│           │   ├── job_analytics.py       # Execution trends & anomaly detection
+│           │   ├── job_generator.py       # Python code generation from GitHub
+│           │   ├── kubectl_troubleshoot.py # Deep kubectl diagnostics
+│           │   ├── nim_benchmark.py       # NIM LLM GPU benchmarking
+│           │   ├── proactive_monitor.py   # Proactive monitoring & auto-troubleshoot
+│           │   └── runai_docs_helper.py   # Direct links to Run:AI documentation
+│           ├── middleware/            # Request middleware
+│           ├── security/              # Security utilities
+│           ├── utils/                 # Shared utilities
+│           └── register.py            # Function registration with NAT
+├── deploy/
+│   ├── Dockerfile                    # Combined container (Nginx + NAT + Next.js)
+│   ├── nginx.conf                    # Nginx reverse proxy config
+│   ├── build-docker.sh              # Docker build script
+│   ├── start-local.sh               # Quick start script for local development
+│   └── helm/
+│       └── runai-agent/             # Production Helm chart
+│           └── charts/
+│               └── mcp-server-runai/ # MCP server subchart dependency
+├── docs/                             # Documentation
+│   ├── QUICKSTART.md
+│   ├── DEPLOYMENT.md
+│   ├── SIDECAR_DEPLOYMENT.md
+│   ├── PROACTIVE_MONITORING.md
+│   ├── FAILURE_ANALYSIS.md
+│   └── FAILURE_ANALYSIS_QUICKSTART.md
+├── runai-cli/                        # TypeScript CLI for remote agent connection
 │   ├── docs/
-│   │   ├── REMOTE_CONNECTION.md           # Remote connection guide (Helm, Docker, etc.)
-│   │   ├── NATURAL_LANGUAGE_GUIDE.md      # Natural language job submission
-│   │   └── QUICKSTART_EXAMPLES.md         # Quick usage examples
-│   └── README.md                       # Full CLI command reference
-└── CHANGELOG.md                        # Version history
+│   │   ├── REMOTE_CONNECTION.md
+│   │   ├── NATURAL_LANGUAGE_GUIDE.md
+│   │   └── QUICKSTART_EXAMPLES.md
+│   └── README.md
+└── CHANGELOG.md
 ```
 
-**Dependencies:**
-- **NVIDIA NeMo Agent Toolkit 1.3.1** - Installed from PyPI (`nvidia-nat>=1.3.0`)
-- **nat_simple_web_query plugin** - Installed from GitHub for `webpage_query` tool
-  - Required for Run:AI documentation search (`runai_docs_search`)
-  - Required for API documentation search (`runai_api_docs`) used by `llm_smart_executor`
-  - Not available on PyPI, must be installed from NAT source repository
+**Key Dependencies:**
+- **NVIDIA NeMo Agent Toolkit 1.3.1** (`nvidia-nat>=1.3.0`) - Agent framework, ReAct agent, tool management
+- **nvidia-nat-mcp>=1.3.0** - MCP client support for NAT (`mcp_client` function group type)
+- **nat_simple_web_query plugin** - Installed from NAT GitHub for `webpage_query` tool (docs search)
+- **mcp-server-runai** - Separate service (deployed as Helm subchart) exposing all Run:AI platform operations as MCP tools
+
+---
 
 ## 🤖 What Can the Agent Do?
 
-### Run:Ai Operations
-- Query cluster environment and configuration
-- **Submit jobs directly to Run:AI cluster** (with safety validations)
-- **Submit distributed training jobs** (PyTorch, TensorFlow, MPI) with multi-worker support
-- **Submit interactive workspaces** (Jupyter, VSCode, custom environments)
-- **Batch job submission** - Submit multiple jobs in one operation (any mix of training, distributed, workspace)
-- **Check job status and troubleshoot issues** (works in any environment)
-- **Cluster resource summary** - See GPU quota and in use per project, cluster totals ("How is my cluster doing?")
-- **Proactively monitor workloads** - Auto-detect failures and send alerts with troubleshooting reports
-- **Manage datasources & projects** - Fast template-based CRUD operations (NFS, PVC, Git, S3, Projects, Departments)
-- **Search Run:AI official documentation** (answers questions about Run:AI features and concepts)
-- Generate Python code for job submissions (uses real GitHub examples)
-- Generate job YAML files (training, interactive, Jupyter)
-- Explain Run:Ai concepts and best practices
-- Search Run:Ai code examples from GitHub
+### Run:AI Operations (via MCP Server)
+- **List & manage projects** — view GPU quotas, create/delete projects
+- **Submit training jobs** — single-node, distributed (PyTorch, TensorFlow, MPI)
+- **Submit interactive workspaces** — Jupyter, VSCode, custom environments
+- **Submit inference workloads** — model serving with autoscaling
+- **Workload lifecycle** — suspend, resume, delete any workload type
+- **Cluster resource summary** — GPU quota and utilization per project and node pool
+- **Department management** — create/list/delete departments with GPU resource allocation
+- **User & access rule management** — list users, manage roles and access rules
+- **Datasource listing** — view PVCs, S3, NFS, and Git data source assets
+- **Node pool information** — list node pools, view metrics
+
+### Agent Tools
+- **Deep troubleshooting** — kubectl logs, events, and AI-powered diagnosis
+- **Proactive monitoring** — continuously detect failures and auto-troubleshoot
+- **Advanced failure analysis** — pattern recognition, remediation suggestions, knowledge graph
+- **Job performance analytics** — execution trends, failure rates, anomaly detection
+- **NIM benchmarking** — run GPU inference benchmarks (H100, H200, A100)
+- **Documentation search** — answers from official Run:AI docs
+- **Code generation** — Python job submission code using real GitHub examples
 
 ### Example Queries
 
 **General Operations:**
 ```
 "Show me the current status of the environment"
-"How do I submit a job using the Runapy SDK?"
+"Show me cluster resource summary"
+"List all departments"
 ```
 
 **Documentation Search:**
 ```
 "What is a nodePool in Run:AI?"
-"How do I configure GPU quotas?"
+"How do I configure GPU fractions?"
 "Explain Run:AI environments"
-"What are the different workload types in Run:AI?"
-"How does Run:AI scheduler work?"
+"How does the Run:AI scheduler work?"
 ```
 
 **Job Submission:**
 ```
 "Submit a training job with 2 GPUs to project-01"
-"Preview a job submission without actually submitting it"
-"Submit a distributed PyTorch job with 4 workers and 2 GPUs per worker"
-"Submit a distributed TensorFlow training job to project-01"
-```
-
-**Batch Job Submission:**
-```
-"Submit 5 training jobs to project-01"
-"Create 3 Jupyter workspaces with different configurations"
-"Submit training jobs for projects project-01, project-02, and project-03"
-"Batch submit 10 jobs with the following specs..."
+"Submit a distributed PyTorch job with 2 workers and 1 GPU per worker"
+"Create a Jupyter workspace with 1 GPU in project-01"
 ```
 
 **Workspace Submission:**
 ```
 "Create a Jupyter workspace with 1 GPU in project-01"
 "Submit a VSCode workspace named 'my-workspace' with 0.5 GPU"
-"Launch a Jupyter notebook workspace for data analysis"
 ```
 
 **Code Generation:**
 ```
-"Generate Python code for the runapy sdk for a distributed training job with 4 GPUs"
-"What is an example of submitting a training job with the Python runapy sdk?"
-```
-
-**Datasource Management:**
-```
-"Create an NFS datasource named ml-data in project-01 with server 10.0.1.50 and path /data"
-"List all PVC datasources in project-01"
-"Create an S3 storage datasource named ml-s3 in project-01 with S3 bucket name my-datasets"
-"Delete the Git datasource named old-code from project-01"
+"Generate Python code for a distributed training job with 4 GPUs"
+"What is an example of submitting a training job with the Python runapy SDK?"
 ```
 
 **Status & Troubleshooting:**
 ```
-"What is the status of my-training-job in project-01?"
-"Troubleshoot job broken in project-01"
-"Debug the training job my-job in project-02"
+"Troubleshoot job broken-job in project-01"
 "Show me logs and events for failed-job"
 "What's wrong with my job that keeps failing?"
 ```
@@ -407,433 +393,110 @@ spec:
 ```
 "Start monitoring all jobs in the cluster"
 "Monitor project-01 for failures"
-"Watch for job failures for the next 30 minutes"
 "What's the monitoring status?"
 ```
 
+**Analytics:**
+```
+"Show me job performance analytics"
+"Show me failure rate by project for the last 7 days"
+"Any jobs running longer than usual?"
+```
+
+---
+
 ## 🚀 Submitting Jobs with the Agent
 
-The agent can now **directly submit workloads** to your Run:AI cluster with built-in safety validations.
+The agent submits workloads directly to your Run:AI cluster via the MCP server's `submit_training`, `submit_inference`, and `submit_workspace` tools.
 
-### 🔒 Safety Features
+### 🔒 Confirmation Workflow
 
-- ✅ **Dry-run by default** - Always previews before submitting
-- ✅ **Explicit confirmation** - Requires user approval
-- ✅ **Project whitelist** - Only submits to approved projects
-- ✅ **Resource limits** - Enforces GPU quotas
-- ✅ **Validation checks** - Verifies job specs before submission
+Before submitting any workload, the agent **always** shows a preview and asks for confirmation:
+
+1. Show the job spec for review
+2. Wait for explicit user approval ("yes", "confirm", "proceed", etc.)
+3. Submit only after confirmation — or cancel if the user declines
 
 ### 📝 Job Submission Examples
 
 #### Example 1: Simple Training Job
 
 ```
-Submit a training job:
-  name: my-training-job
-  project: project-01
-  image: pytorch/pytorch:latest
-  gpus: 2
+Submit a training job called my-training-job to project-01 with image pytorch/pytorch:latest and 2 GPUs
 ```
 
 **Agent Response:**
 ```
-✅ Job Submitted Successfully!
+Here's the job I'll submit:
 
-Job ID: 12345
 Name: my-training-job
 Project: project-01
-Status: Submitted
+Image: pytorch/pytorch:latest
+GPUs: 2
 
-📊 Monitor your job:
-View the running job under `Workloads on the `Workload Manager` tab.
-```
-
-#### Example 2: Dry-Run (Preview Only)
-
-```
-Preview this job without submitting:
-  name: test-job
-  project: project-01
-  image: nvidia/cuda:12.1.0-base
-  gpu: 1
-  dry_run: true
-```
-
-**Agent Response:**
-```
-✅ Job Validation Passed
-
-Job Name: test-job
-Project: project-01
-Image: nvidia/cuda:12.1.0-base
-Resources:
-  • GPU: 1
-  • CPU: 0.1 cores
-  • Memory: 100M
-
-This is a DRY RUN - job will NOT be submitted.
-Set dry_run=false and confirmed=true to actually submit.
-```
-
-#### Example 3: Quick Start Demo
-
-```
-Submit a quickstart demo job to project-01 with 1 GPU
-```
-
-The agent will:
-1. ✅ Validate the job spec
-2. 📋 Show you a preview
-3. ⚠️  Ask for confirmation
-4. 🚀 Submit to Run:AI cluster
-5. 📊 Provide monitoring links
-
-#### Example 4: Custom Configuration
-
-```
-Submit training job:
-  name: distributed-training
-  project: project-01
-  image: gcr.io/run-ai-demo/quickstart-demo
-  command: python train.py --distributed
-  gpus: 4
-  confirmed: true
-```
-
-#### Example 5: Distributed Training Job (PyTorch)
-
-```
-Submit a distributed PyTorch job:
-  name: pytorch-distributed-training
-  project: project-01
-  image: kubeflow/pytorch-dist-mnist:latest
-  framework: pytorch
-  workers: 2
-  gpus: 1
-```
-
-**Agent Response:**
-```
-✅ Distributed Job Submitted Successfully!
-
-Job Name: pytorch-distributed-training
-Project: project-01
-Framework: PyTorch
-Workers: 2 (+ 1 master)
-GPUs per Worker: 1
-Total GPUs: 3
-
-📊 Monitor your job:
-View the distributed workload under `Workloads` on the `Workload Manager` tab.
-```
-
-#### Example 6: Distributed Training Job (TensorFlow)
-
-```
-Submit a distributed TensorFlow job named "tf-dist-job" to project-01:
-  image: tensorflow/tensorflow:latest-gpu
-  framework: tensorflow
-  workers: 4
-  gpus: 2
-```
-
-**Agent Response:**
-```
-✅ Distributed Job Submitted Successfully!
-
-Job Name: tf-dist-job
-Project: project-01
-Framework: TensorFlow
-Workers: 4 (+ 1 master)
-GPUs per Worker: 2
-Total GPUs: 10
-
-The job uses the TensorFlow distributed training framework with:
-  • Master: 1 pod with 2 GPUs (coordinates training)
-  • Workers: 4 pods with 2 GPUs each (parallel training)
-
-📊 Monitor your job:
-View the distributed workload under `Workloads` on the `Workload Manager` tab.
-```
-
-#### Example 7: Interactive Workspace (Jupyter)
-
-```
-Submit a Jupyter workspace:
-  name: my-jupyter-workspace
-  project: project-01
-  image: jupyter/scipy-notebook
-  gpu: 1
-```
-
-**Agent Response:**
-```
-✅ Workspace Submitted Successfully!
-
-Workspace ID: abc123
-Name: my-jupyter-workspace
-Project: project-01
-Type: jupyter
-GPU: 1.0 GPU portion
-
-📊 Access your workspace:
-Once running, access Jupyter via the Run:AI UI
-
-🌐 View in UI:
-https://runcluster.example.com/projects/project-01/workspaces
-```
-
-#### Example 8: VSCode Workspace with GPU Portion
-
-```
-Submit a VSCode workspace named "vscode-dev" with 0.5 GPU in project-01
-```
-
-**Agent Response:**
-```
-✅ Workspace Submitted Successfully!
-
-Workspace ID: xyz789
-Name: vscode-dev
-Project: project-01
-Type: vscode
-GPU: 50% GPU portion
-
-📊 Access your workspace:
-Once running, access VSCode via the Run:AI UI
-```
-
-**Key Differences - Workspaces vs Training Jobs:**
-- **Workspaces** are interactive environments with web interfaces (Jupyter, VSCode)
-- Support **GPU portions** (e.g., 0.5 GPU) for efficient resource sharing
-- Automatically configured with exposed URLs and ports
-- Ideal for development, experimentation, and interactive analysis
-- **Training Jobs** are for batch processing and model training
-
-#### Example 9: Batch Job Submission (Multiple Jobs at Once)
-
-The agent supports **batch submission** to submit multiple jobs in a single operation:
-
-```
-Submit 3 training jobs to project-01:
-  - job1 with 2 GPUs using pytorch/pytorch:latest
-  - job2 with 1 GPU using pytorch/pytorch:latest
-  - job3 with 4 GPUs using tensorflow/tensorflow:latest
-```
-
-**Agent Response:**
-```
-📋 Batch Job Preview
-
-Total Jobs: 3
-
-Job Types:
-  • Training: 3
-
-Total GPUs Required: 7
-
-Jobs to Submit:
-
-1. job1 (training)
-   - Project: project-01
-   - Image: pytorch/pytorch:latest
-   - GPUs: 2
-
-2. job2 (training)
-   - Project: project-01
-   - Image: pytorch/pytorch:latest
-   - GPUs: 1
-
-3. job3 (training)
-   - Project: project-01
-   - Image: tensorflow/tensorflow:latest
-   - GPUs: 4
-
-⚠️  Confirmation Required
-
-You are about to submit 3 jobs to Run:AI cluster.
+Shall I go ahead and submit this?
 ```
 
 After confirmation:
 ```
-🎯 Batch Submission Complete
+✅ Training job submitted successfully!
 
-Total Jobs: 3
-Successful: 3 ✅
-Failed: 0 ❌
-
-Detailed Results:
-
-✅ job1
-   Status: Submitted
-   Job ID: abc-123
-
-✅ job2
-   Status: Submitted
-   Job ID: def-456
-
-✅ job3
-   Status: Submitted
-   Job ID: ghi-789
-
-🎉 All jobs submitted successfully!
+Job ID: f7326e42-f587-4a0d-b70b-7a89a19b19dd
+Name: my-training-job
+Project: project-01
+Status: Creating
 ```
 
-**Batch Submission Features:**
-- ✅ Submit multiple jobs (training, distributed, workspace) in one operation
-- ✅ Mix different job types in the same batch
-- ✅ Continue on error (partial success supported)
-- ✅ Comprehensive reporting with success/failure status for each job
-- ✅ Same safety features as single submission (dry-run, confirmation, validation)
-- ✅ **Production Ready** - Fully tested and validated on live Run:AI clusters
+#### Example 2: Distributed Training Job (PyTorch)
 
-**Example - Mixed Job Types:**
 ```
-Submit these jobs to project-01:
-  - training job named "model-training" with 2 GPUs
-  - distributed job named "dist-training" with 4 workers and 2 GPUs per worker using pytorch
-  - jupyter workspace named "analysis" with 1 GPU
+Submit a distributed PyTorch job: name pytorch-dist, project project-01,
+image kubeflow/pytorch-dist-mnist:latest, 2 workers, 1 GPU per worker
 ```
 
-**When to Use Batch Submission:**
-- Submitting multiple jobs to the same project
-- Creating similar jobs with different configurations  
-- Bulk provisioning for multiple users/teams
-- Automated job creation from scripts or pipelines
-- Parallel experimentation with different hyperparameters
-- Multi-stage ML pipelines requiring multiple workloads
+**Agent Response:**
+```
+✅ Distributed job submitted successfully!
 
-### 🛡️ Configuration
-
-**By default, the agent has full access to all projects and resources.** Safety features like dry-run and confirmation are enabled to prevent accidents.
-
-To add restrictions (optional), edit `runai-agent/configs/workflow.yaml`:
-
-```yaml
-runai_submit_workload:
-  _type: runai_submit_workload
-  dry_run_default: true           # Always preview first (recommended)
-  require_confirmation: true      # Require explicit approval (recommended)
-  # Optional restrictions (uncomment to enable):
-  # allowed_projects: ["project-01", "project-02"]  # Limit to specific projects
-  # max_gpus: 8                                     # Cap GPU requests per job
-
-runai_submit_distributed_workload:
-  _type: runai_submit_distributed_workload
-  dry_run_default: true
-  require_confirmation: true
-  # Optional restrictions:
-  # allowed_projects: ["project-01"]
-  # max_gpus_per_worker: 8
-
-runai_submit_workspace:
-  _type: runai_submit_workspace
-  dry_run_default: true
-  require_confirmation: true
-  # Optional restrictions:
-  # allowed_projects: ["project-01"]
-  # max_gpus: 8
-
-runai_submit_batch:
-  _type: runai_submit_batch
-  dry_run_default: true
-  require_confirmation: true
-  # Optional restrictions:
-  # allowed_projects: ["project-01"]
-  # max_gpus_per_job: 8
-  # max_batch_size: 20
-
-runai_template_executor:
-  _type: runai_template_executor
-  require_confirmation: true
-  dry_run_default: true
-  debug_mode: false  # Enable via RUNAI_TEMPLATE_DEBUG=true env var
-  # Optional restrictions:
-  # allowed_projects: ["project-01"]
-  # allowed_resource_types: ["nfs", "pvc", "git", "s3", "hostpath", "project", "department"]
+Job ID: 4650f48a-6705-435c-8cfe-046bdea40917
+Name: pytorch-dist
+Project: project-01
+Framework: PyTorch
+Workers: 2 × 1 GPU
+Status: Creating
 ```
 
-**Recommended Practice:**
-- Keep `dry_run_default: true` and `require_confirmation: true` enabled
-- Only add project/resource restrictions if needed for your security requirements
-- By default, users have full access with safety confirmations
+#### Example 3: Interactive Workspace (Jupyter)
 
-### ⚠️ Important Notes
-
-1. **Authentication Required**: Ensure `RUNAI_CLIENT_ID`, `RUNAI_CLIENT_SECRET`, and `RUNAI_BASE_URL` are set
-2. **Project Access**: You can only submit to whitelisted projects
-3. **Resource Limits**: GPU requests are capped at `max_gpus`
-4. **Confirmation**: Set `confirmed=true` to bypass interactive approval
-
-### 🔍 Troubleshooting Job Submission
-
-**Project Not Found:**
 ```
-❌ Project Not Found
-
-The project "my-project" was not found in your Run:AI cluster.
-
-Available projects:
-  • project-01
-  • project-02
-
-Please use one of the available projects.
+Submit a Jupyter workspace named my-jupyter in project-01 with image jupyter/scipy-notebook and 1 GPU
 ```
 
-**Exceeded GPU Limit:**
+**Agent Response:**
 ```
-❌ Validation Failed
+✅ Workspace submitted successfully!
 
-GPU request (16) exceeds maximum allowed (8)
-Please reduce GPU count or contact your administrator.
-```
-
-**Missing Authentication:**
-```
-⚠️ Run:AI SDK is not installed
-
-To submit jobs directly, install the Run:AI SDK:
-pip install runapy==1.223.0
+Workspace ID: 462b67de-353f-4f8e-b3e2-73aeab837c01
+Name: my-jupyter
+Project: project-01
+Image: jupyter/scipy-notebook
+GPU: 1
+Status: Creating
 ```
 
 ---
 
 ## 🔄 Job Lifecycle Management
 
-The agent provides comprehensive workload management through a unified lifecycle tool that handles suspend, resume, and delete operations for all workload types (training, workspace, distributed).
+The agent provides full workload lifecycle management via MCP tools.
 
 ### 📊 Check Job Status
 
-Query the status of any running or completed job:
-
 ```
-Check the status of job "my-training-job" in project-01
-```
-
-**Agent Response:**
-```
-✅ Job Status: my-training-job
-
-📋 Basic Information:
-  • ID: f7326e42-f587-4a0d-b70b-7a89a19b19dd
-  • Status: Running
-  • Type: Run:AI Workload
-  • Project: project-01
-
-🔍 Pod Details:
-  • Pod Name: my-training-job-0-0
-  • Node: gpu-node-01
-  • Phase: Running
-  • GPUs Allocated: 4
-
-⏱️ Timing:
-  • Started: 2025-11-20 10:30:00
-  • Running for: 2h 15m
+What is the status of my-training-job in project-01?
 ```
 
 ### ⏸️ Suspend a Job
-
-Pause a running job to free up resources (can be resumed later):
 
 ```
 Suspend the job "my-training-job" in project-01
@@ -841,146 +504,84 @@ Suspend the job "my-training-job" in project-01
 
 **Agent Response:**
 ```
-✅ The job 'my-training-job' in project-01 has been successfully suspended.
+✅ Job 'my-training-job' in project-01 has been successfully suspended.
 
-The job is now in a paused state with workload ID `f7326e42-f587-4a0d-b70b-7a89a19b19dd`.
-To resume the job later, you can use: "Resume job my-training-job in project-01"
+To resume: "Resume job my-training-job in project-01"
 ```
 
 ### ▶️ Resume a Job
-
-Restart a previously suspended job:
 
 ```
 Resume the job "my-training-job" in project-01
 ```
 
-**Agent Response:**
-```
-✅ The job 'my-training-job' in project-01 has been successfully resumed.
-
-The workload ID is f7326e42-f587-4a0d-b70b-7a89a19b19dd.
-You can monitor its status with: "Check status of job my-training-job in project-01"
-```
-
 ### 🗑️ Delete a Job
 
-**⚠️ Note:** Deletion requires **two-step confirmation** in conversational UI mode:
+Deletion requires explicit user confirmation before the agent calls `delete_training` / `delete_workspace` / `delete_inference`.
 
-**Step 1 - Initial Request:**
+**Step 1 - Request:**
 ```
 Delete the job "old-training-job" from project-01
 ```
 
 **Agent Response:**
 ```
-⚠️ **WARNING: Permanent Action**
-
-You are about to delete the job 'old-training-job' in project 'project-01'.
-This action is irreversible and will permanently remove all associated resources and data.
-
-To proceed, please explicitly confirm by saying 'yes', 'confirm', or 'proceed'.
+⚠️ You are about to permanently delete 'old-training-job' from project-01.
+This action cannot be undone. Confirm?
 ```
 
-**Step 2 - User Confirms:**
+**Step 2 - Confirm:**
 ```
-yes, delete it
+yes
 ```
 
 **Agent Response:**
 ```
-✅ The job 'old-training-job' from project 'project-01' has been successfully deleted.
-
-The workload type was Training with ID f7326e42-f587-4a0d-b70b-7a89a19b19dd.
-All associated resources have been permanently removed from the cluster.
+✅ Job 'old-training-job' deleted successfully.
 ```
-
-**Note:** To cancel deletion, simply respond with "no", "cancel", or "nevermind" and the agent will not proceed.
-
-### 🛡️ Safety Features
-
-- **Project Whitelist**: Can only manage jobs in allowed projects
-- **Two-Step Confirmation**: Deletion requires explicit user confirmation (in UI mode)
-- **Validation**: All operations validate job existence before proceeding
-- **Error Handling**: Clear feedback for missing jobs or permission issues
-- **Status Checks**: Prevents invalid operations (e.g., resuming a running job)
 
 ---
 
 ## 🔔 Proactive Monitoring & Auto-Troubleshooting
 
-The agent can **continuously monitor** your Run:AI workloads and automatically troubleshoot failures in real-time, with optional Slack notifications.
+The agent can **continuously monitor** your Run:AI workloads and automatically troubleshoot failures, with optional Slack notifications.
 
 ### ✨ Key Features
 
 - 🔄 **Continuous Polling** - Check job status at configurable intervals (default: 60s)
-- 🔍 **Failure Detection** - Automatically detects Failed, Error, ImagePullBackOff, OOMKilled, and Unknown states
-- 🔧 **Auto-Troubleshooting** - Runs kubectl diagnostics (logs, events, pod status) when failures are detected
-- 🔔 **Smart Alerts** - Sends formatted alerts to console and Slack with troubleshooting reports
-- 🚫 **Anti-Spam** - Configurable alert limits per job to prevent notification flooding
+- 🔍 **Failure Detection** - Detects Failed, Error, ImagePullBackOff, OOMKilled, and Unknown states
+- 🔧 **Auto-Troubleshooting** - Runs kubectl diagnostics when failures are detected
+- 🔔 **Smart Alerts** - Console and Slack notifications with troubleshooting reports
+- 🚫 **Anti-Spam** - Configurable alert limits per job
 - 🎯 **Project Filtering** - Monitor all projects or specific ones
-- ⏱️ **Flexible Duration** - Run continuously or for a specified time period
 
 ### 📊 Usage Examples
 
-**Start Monitoring All Jobs:**
 ```
 Start monitoring all jobs in the cluster
-```
-
-The agent will:
-1. Poll all workloads every 60 seconds
-2. Detect failures (Failed, Error, ImagePullBackOff, OOMKilled, Unknown phases)
-3. Auto-troubleshoot with kubectl (pod status, logs, events)
-4. Send formatted alerts with diagnostic information
-5. Continue monitoring until stopped or duration expires
-
-**Monitor Specific Project:**
-```
 Monitor jobs in project ml-team
-```
-
-**Time-Limited Monitoring:**
-```
 Monitor all jobs for 30 minutes
-```
-
-**Check Monitoring Status:**
-```
 What is the monitoring status?
 ```
 
 ### 🔔 Alert Example
 
-When a failure is detected, you'll see alerts like this:
-
 ```
 🔴 Job Failure Alert: my-training-job
 
-**Project:** ml-team
-**Job Name:** my-training-job
-**Type:** Training
-**Status:** OOMKilled
-**Time:** 2025-12-04 13:46:05
-**UUID:** fbe3b7a8-37a0-4e9a-8ef1-067a25a73ad1
+Project: ml-team
+Status: OOMKilled
+Time: 2026-01-15 13:46:05
 
-**Auto-Troubleshoot Report:**
-🔍 Auto-Troubleshoot Report for my-training-job
-
-## Pod Status:
-NAME                 READY   STATUS      RESTARTS   AGE
-my-training-job-0-0  0/1     OOMKilled   0          5h42m
-
-## Logs (last 50 lines):
-[Container logs showing memory allocation errors...]
-
-## Events:
-[Kubernetes events showing OOM kills and memory limits...]
+Auto-Troubleshoot Report:
+Pod Status: OOMKilled (0/1 Ready)
+Logs: [Memory allocation errors...]
+Events: [OOM kills and memory limit exceeded...]
 ```
 
 ### 🔧 Slack Integration (Optional)
 
-To enable Slack notifications, configure a webhook in `runai-agent/configs/workflow.yaml`:
+Configure a webhook in `runai-agent/configs/workflow.yaml`:
 
 ```yaml
 runai_proactive_monitor:
@@ -992,48 +593,15 @@ runai_proactive_monitor:
 
 ### 🛡️ Configuration Options
 
-Edit `runai-agent/configs/workflow.yaml` to customize monitoring behavior:
-
 ```yaml
 runai_proactive_monitor:
-  # Projects to monitor (* = all)
-  monitored_projects: ["*"]
-  
-  # Check interval (seconds)
+  monitored_projects: ["*"]        # * = all projects
   poll_interval_seconds: 60
-  
-  # Auto-troubleshoot failures
   enable_auto_troubleshoot: true
-  
-  # Monitor all jobs or only failures
-  monitor_only_failed: false
-  
-  # Prevent alert spam
+  monitor_only_failed: false       # true = only failures, false = all jobs
   max_alerts_per_job: 1
-  
-  # Optional Slack webhook
-  slack_webhook_url: "https://hooks.slack.com/services/..."
+  # slack_webhook_url: "https://hooks.slack.com/services/..."
 ```
-
-### 📈 Benefits
-
-**Before Proactive Monitoring:**
-- ❌ Manual job status checks
-- ❌ Delayed failure detection (hours/days)
-- ❌ Manual troubleshooting for each failure
-- ❌ No overnight/weekend coverage
-
-**After Proactive Monitoring:**
-- ✅ Automatic failure detection (seconds/minutes)
-- ✅ Instant troubleshooting reports
-- ✅ Slack alerts for immediate awareness
-- ✅ 24/7 monitoring without manual intervention
-
-**Perfect for:**
-- Production ML training pipelines
-- Multi-project environments
-- Teams needing fast incident response
-- Overnight and weekend job monitoring
 
 📚 **Full Documentation:** [docs/PROACTIVE_MONITORING.md](docs/PROACTIVE_MONITORING.md)
 
@@ -1041,471 +609,211 @@ runai_proactive_monitor:
 
 ## 🔬 Advanced Failure Analysis
 
-The agent includes **intelligent failure analysis** that goes beyond logs to provide pattern recognition, cross-job correlation, and automated remediation suggestions.
+Intelligent failure analysis with pattern recognition, cross-job correlation, and automated remediation suggestions.
 
-### 🧪 Quick Test Prompts
+### 🧪 Example Prompts
 
-**Get Started (Basic Queries):**
 ```
 Show me failure statistics
 What failure patterns have been detected?
 Analyze recent job failures
-How many failures have been recorded?
-```
-
-**Deep Analysis:**
-```
 What are the top failure types and how can I fix them?
 Show me problematic nodes from the last 7 days
-Analyze failures for project ml-team
 Give me remediation suggestions for OOMKilled errors
-```
-
-**Specific Troubleshooting:**
-```
-What's the failure rate for gpu-node-03?
-Which container images are causing the most failures?
-Show me correlation between failure types and time of day
-Get solutions that worked for ImagePullBackOff errors
 ```
 
 ### ✨ Key Capabilities
 
-**Pattern Recognition:**
-- "This is the 5th OOMKilled in project-01 today"
-- "Failures spike between 2-4pm (resource contention)"
-- Detects repeated failures across jobs and projects
+- **Pattern Recognition** — "This is the 5th OOMKilled in project-01 today"
+- **Cross-Job Correlation** — "Node gpu-node-03 has 90% failure rate across 15 jobs"
+- **Automated Remediation** — Rule-based solutions + historical fixes with success rates
+- **Knowledge Graph** — Persistent database of failure → solution mappings
 
-**Cross-Job Correlation:**
-- "Node gpu-node-03 has 90% failure rate across 15 jobs"
-- "Container image pytorch:2.0 failed 8 times in the last hour"
-- Identifies systemic issues before they become critical
+### 📊 Example Output
 
-**Automated Remediation:**
-- Rule-based solutions for common issues
-- Historical solutions: "3 other users fixed this by increasing memory 2x"
-- Success rate tracking: Solutions ranked by effectiveness
-
-**Knowledge Graph:**
-- Persistent database of failure → solution mappings
-- Builds institutional knowledge over time
-- Community learning from successful fixes
-
-### 📊 Usage Examples
-
-**Analyze Patterns:**
-```
-Analyze failures from the last 7 days
-```
-
-**Agent Response:**
 ```
 📊 Advanced Failure Analysis Report
 
-## 📈 Summary
+Summary:
 - Total Failures: 23
 - Projects Affected: 4
-- Unique Failure Types: 5
 
-## 🔍 Detected Patterns
+Detected Patterns:
+🔴 Project ml-team: 8 failures (OOMKilled: 5, ImagePullBackOff: 3)
 
-🔴 Project: ml-team
-   - Failures: 8
-   - Top failure types: {'OOMKilled': 5, 'ImagePullBackOff': 3}
+Problematic Nodes:
+🔴 gpu-node-03: 12 failures across 8 jobs (75% failure rate)
 
-## 🔥 Problematic Nodes
-
-🔴 Node: gpu-node-03
-   - Failures: 12 across 8 jobs
-   - Failure Rate: 75.0%
-
-## 💡 Recommendations
-
+Recommendations:
 ⚠️ Node 'gpu-node-03' has 75% failure rate. Consider cordoning for maintenance.
-🐳 Image 'pytorch:2.0' is associated with 5 failures. Verify compatibility.
+🐳 Image 'pytorch:2.0' associated with 5 failures. Verify compatibility.
 ```
-
-**Get Remediation Suggestions:**
-```
-How do I fix OOMKilled failures?
-```
-
-**Agent Response:**
-```
-🔧 Automated Remediation Suggestions
-
-Failure Type: OOMKilled
-Description: Out of Memory - Pod exceeded memory limit
-
-## 🎯 Rule-Based Solutions
-
-1. Increase memory request/limit by 2x
-2. Optimize application memory usage
-
-## 📊 Historical Solutions (Community Knowledge)
-
-1. Increase memory limit from 8Gi to 16Gi
-   ✅ Success Rate: 85.7% (6 successes, 1 failure)
-
-2. Enable gradient checkpointing to reduce memory usage
-   ✅ Success Rate: 75.0% (3 successes, 1 failure)
-```
-
-**Get Statistics:**
-```
-Show me failure statistics for the last 30 days
-```
-
-### 🔄 Automatic Integration
-
-The failure analyzer **automatically integrates** with proactive monitoring:
-
-- ✅ Every failure is recorded to the database
-- ✅ Patterns are analyzed in real-time
-- ✅ Remediation suggestions improve over time
-- ✅ Knowledge graph builds automatically
-
-**No manual setup required!** Just enable proactive monitoring:
-
-```
-Start monitoring all jobs
-```
-
-### 🎯 Benefits
-
-**Before:**
-- ❌ Manual investigation of each failure
-- ❌ No visibility into systemic issues
-- ❌ Repeated mistakes across teams
-- ❌ Knowledge loss when team members leave
-
-**After:**
-- ✅ Automatic pattern detection
-- ✅ Proactive identification of problematic nodes/images
-- ✅ Institutional knowledge preservation
-- ✅ Fast remediation with proven solutions
 
 ### 🛠️ Configuration
 
-Edit `runai-agent/configs/workflow.yaml`:
-
 ```yaml
 runai_failure_analyzer:
-  _type: runai_failure_analyzer
-  db_path: "/tmp/runai_failure_history.db"  # Failure history database
-  lookback_days: 7  # Days of history to analyze
-  pattern_threshold: 3  # Min occurrences to identify pattern
-  enable_auto_remediation: false  # Enable automatic fixes (with confirmation)
+  db_path: "${RUNAI_FAILURE_DB_PATH:-/tmp/runai_failure_history.db}"
+  lookback_days: 7
+  pattern_threshold: 3       # Min occurrences to identify a pattern
+  enable_auto_remediation: false
 ```
 
-**For production:** Mount a persistent volume to preserve failure history across restarts.
-
-📚 **Documentation:**
-- **[FAILURE_ANALYSIS.md](docs/FAILURE_ANALYSIS.md)** - Complete user guide
-- **[FAILURE_ANALYSIS_QUICKSTART.md](docs/FAILURE_ANALYSIS_QUICKSTART.md)** - 5-minute quick start
+📚 **Documentation:** [docs/FAILURE_ANALYSIS.md](docs/FAILURE_ANALYSIS.md)
 
 ---
 
 ## 📊 Job Performance Analytics
 
-The agent can report **historical performance insights** from the same database used for failure analysis. Run history is populated when proactive monitoring is enabled (completed jobs are recorded automatically).
+Historical performance insights from the same database used for failure analysis. Populated automatically when proactive monitoring is running.
 
 **Example prompts:**
-- "How long do my training jobs usually take?"
-- "Show me failure rate by project for the last 7 days"
-- "Any jobs running longer than usual?"
-- "Job performance analytics for project ml-team"
+```
+Show me job performance analytics
+How long do my training jobs usually take?
+Show me failure rate by project for the last 7 days
+Any jobs running longer than usual?
+Job performance analytics for project ml-team
+```
 
-**What you get:** Execution time trends (avg by project/image), failure rates by project and image, short recommendations (e.g. "Training jobs in X typically take ~2h"), and anomaly detection for running jobs that are 3× longer than their usual duration.
+**What you get:**
+- Execution time trends (average by project/image)
+- Failure rates by project and image
+- Recommendations (e.g. "Training jobs in project-01 typically take ~2h")
+- Anomaly detection for jobs running 3× longer than their usual duration
 
 ---
 
-## 🧠 Template-Based Datasource Management
+## 🗄️ Datasource Operations
 
-The agent provides **fast, deterministic datasource and project management** through template-based execution - 20-50x faster than LLM generation.
+The agent can list all datasource assets via the MCP server.
 
-📚 **Quick Start Guide:** [QUICKSTART_TEMPLATES.md](docs/QUICKSTART_TEMPLATES.md) - 5-minute testing guide with debug mode
-
-### Architecture
-
-**Template-Based Approach: Deterministic Jinja2 Templates**
-- **Fast Execution** - 20-50x faster than LLM generation (< 1 second vs 2-5 seconds)
-- **Deterministic** - Same input always produces same output
-- **Debuggable** - Debug mode shows all API calls and responses
-- **Proven** - Validated across NFS, PVC, Git, S3 datasources and project operations
-
-### Features
-
-- ✅ **Full CRUD Operations**: Create, list, and delete for NFS, PVC, Git datasources and projects
-- ✅ **Natural Language**: No need to specify tool names - just ask naturally
-- ✅ **Teaching Examples**: 5 core patterns (org-unit, flat spec, nested spec, list, delete)
-- ✅ **Dynamic Adaptation**: LLM generalizes patterns to new resource types
-- ✅ **Swagger Integration**: Endpoint discovery and schema validation
-- ✅ **OAuth Authentication**: Secure authentication with Run:AI API
-- ✅ **SSL Verification**: Proper certificate validation (verify=True enforced)
-- ✅ **Dry-Run Mode**: Preview generated code before execution
-- ✅ **Wildcard Validation**: Support for ["*"] to allow all projects by default
-
-### Project & Department Operations (Pattern 1: Org-Unit Resources)
-
-**Create Department:**
-```
-Create a department named test-dept with 8 GPU quota
-```
-✅ **Tested & Working** - Demonstrates org-unit resource creation with cluster lookup
-
-**Create Project:**
-```
-Create a project named test-project with 4 GPU quota
-Create a project named ml-team in department test-dept with 8 GPU quota
-```
-✅ **Tested & Working** - Shows project hierarchy and resource allocation
-
-### NFS Operations (Pattern 2: Flat Spec Datasources)
-
-**Create NFS:**
-```
-Create an NFS datasource named ml-datasets in test-project with server 192.168.1.100 and path /data/ml
-```
-✅ **Tested & Working** - Demonstrates flat spec datasource pattern
-
-**List NFS:**
-```
-List all NFS datasources
-Show me NFS storage in test-project
-```
-✅ **Tested & Working** - Pattern 4 (GET operations)
-
-**Delete NFS:**
-```
-Delete the NFS datasource named ml-datasets from test-project
-```
-✅ **Tested & Working** - Pattern 5 (DELETE operations)
-
-### PVC Operations (Pattern 3: Nested Spec Datasources)
-
-**Create PVC:**
-```
-Create a PVC named test-pvc-storage with 10Gi storage in test-project with storage class ebs-csi
-Create a 50Gi volume named training-data in test-project
-```
-✅ **Tested & Working** - Complex nested claimInfo structure handled perfectly!
-
-**List PVCs:**
+**List operations (available now):**
 ```
 List all PVC datasources
-Show me all PVC datasources
-```
-✅ **Tested & Working** - Universal list pattern with proper routing
-
-**Delete PVC:**
-```
-Delete the PVC named test-pvc-storage from test-project
-```
-✅ **Tested & Working** - Clean deletion with confirmation
-
-### Git Datasource Operations (Pattern 2: Flat Spec)
-
-**Create Git:**
-```
-Create a Git datasource named code-repo with repository https://github.com/nvidia/nemo branch main in test-project
-```
-✅ **Tested & Working** - Git repository integration
-
-**List Git:**
-```
-List all Git datasources
-Show me Git storage in test-project
-```
-✅ **Ready to Use** - Same pattern as NFS/PVC list
-
-**Delete Git:**
-```
-Delete the Git datasource named code-repo from project-01
-```
-✅ **Tested & Working** - Clean deletion with confirmation
-
-### S3 Datasource Operations (Pattern 2: Flat Spec)
-
-**Create S3:**
-```
-Create an S3 storage datasource named ml-s3-bucket in project-01 with S3 bucket name my-datasets and endpoint https://s3.amazonaws.com
-```
-✅ **Tested & Working** - S3 bucket integration
-
-**Important for S3 prompts:**
-- Use explicit phrasing: "**S3 storage datasource**" (not just "S3 datasource")
-- Specify "**S3 bucket name**" (not just "bucket")
-- This helps the agent correctly route to template executor instead of project creation
-
-**List S3:**
-```
-List all S3 datasources in project-01
-Show me S3 storage in project-01
-```
-✅ **Tested & Working** - Fast retrieval of S3 configurations
-
-**Delete S3:**
-```
-Delete the S3 datasource named ml-s3-bucket from project-01
-```
-✅ **Tested & Working** - Clean deletion with confirmation
-
-### How It Works
-
-1. **Natural Language Input**: User asks in plain English
-2. **Template Selection**: Agent selects appropriate Jinja2 template based on resource type and action
-3. **Code Generation**: Template renders Python code with user parameters
-4. **Preview (Dry-Run)**: Shows generated code for review (optional)
-5. **Execution**: Runs code after confirmation
-6. **Result**: Returns success/failure with details
-
-**Debug Mode** (recommended for testing):
-```bash
-export RUNAI_TEMPLATE_DEBUG=true  # See all parameters, API calls, and responses
+List all NFS assets
+Show me S3 datasources
+List Git datasources
 ```
 
-**Example Generated Code:**
-```python
-import requests
-
-# Step 1: Authenticate with Run:AI API
-token_response = requests.post(
-    f"{base_url}/api/v1/token",
-    json={"grantType": "client_credentials", "clientId": client_id, "clientSecret": client_secret},
-    verify=True
-)
-# Access token retrieved from authentication response
-headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-
-# Step 2: Get project ID
-projects_response = requests.get(f"{base_url}/api/v1/org-unit/project", headers=headers, verify=True)
-project_obj = next(p for p in projects_response.json() if p["name"] == "project-01")
-project_id = project_obj["id"]
-
-# Step 3: Create NFS datasource
-response = requests.post(
-    f"{base_url}/api/v1/asset/datasource/nfs",
-    headers=headers,
-    json={
-        "meta": {"name": "ml-datasets", "scope": "project", "projectId": project_id, "clusterId": cluster_id},
-        "spec": {"server": "192.168.1.100", "path": "/data/ml", "readOnly": False}
-    },
-    verify=True
-)
-result = response.json()
-```
-
-### Architecture
-
-The executor uses **deterministic Jinja2 templates**:
-- Pre-built templates for common operations (NFS, PVC, Git, S3, Projects, Departments)
-- Template patterns: auth, project lookup, flat spec, nested spec, list, delete
-- Zero LLM overhead - instant code generation
-- Debug mode for troubleshooting API calls
-
-### Safety & Security
-
-- ✅ **Project Whitelist**: Only allowed projects can be modified
-- ✅ **SSL Certificate Verification**: No insecure requests
-- ✅ **Confirmation Required**: Destructive operations need approval
-- ✅ **Dry-Run Default**: Preview before execution
-- ✅ **Error Handling**: Clear feedback on failures
+**Create/delete operations** are not yet available in the MCP server and will be added in a future release.
 
 ---
 
 ## 🏗️ Architecture
 
-### Simplified Architecture
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                  Combined Container                         │
-│                                                             │
-│  ┌──────────┐                                              │
-│  │  Nginx   │  ← Entry point (port 3000)                   │
-│  │  :3000   │    Static configuration                      │
-│  └────┬─────┘                                              │
-│       │                                                     │
-│       ├─────→ /generate ──→ ┌──────────────┐             │
-│       │       /docs         │  NAT Agent   │             │
-│       │                     │    :8000     │             │
-│       │                     └──────────────┘             │
-│       │                                                    │
-│       └─────→ /* ──────→   ┌──────────────┐             │
-│                              │   Next.js    │             │
-│                              │    :3001     │             │
-│                              └──────────────┘             │
-└─────────────────────────────────────────────────────────────┘
-
-Access via Ingress/Service or Direct Connection
+┌──────────────────────────────────────────────────────────────────┐
+│                       runai-agent Pod                            │
+│                                                                  │
+│  ┌──────────┐                                                    │
+│  │  Nginx   │  ← Entry point (port 3000)                         │
+│  │  :3000   │    Static reverse proxy                            │
+│  └────┬─────┘                                                    │
+│       │                                                          │
+│       ├──→ /generate, /docs ──→ ┌──────────────────────────┐   │
+│       │                          │      NAT Agent            │   │
+│       │                          │       :8000               │   │
+│       └──→ /* ──→ ┌──────────┐  │  (ReAct + MCP client)    │   │
+│                    │ Next.js  │  └────────────┬─────────────┘   │
+│                    │  :3001   │               │ MCP              │
+│                    └──────────┘               │ streamable-http  │
+└───────────────────────────────────────────────┼──────────────────┘
+                                                │
+                ┌───────────────────────────────▼──────────────────┐
+                │              mcp-server-runai Pod                  │
+                │                    :8080                           │
+                │                                                    │
+                │  MCP Tools: list/create/delete projects,           │
+                │  submit/suspend/resume/delete workloads,           │
+                │  departments, node pools, users, access rules,     │
+                │  PVC/S3/NFS/Git asset listing                      │
+                └───────────────────────────────┬──────────────────┘
+                                                │
+                                        Run:AI Cluster API
 ```
 
 **Components:**
-- **Nginx** (port 3000): Static reverse proxy configuration
-  - Routes API requests (`/generate`, `/docs`) → Backend (8000)
-  - Routes UI requests (`/*`) → Frontend (3001)
-  - No dynamic configuration or path rewrites
-- **Next.js UI** (port 3001): Modern web interface with SSE streaming
-  - Pre-built at container build time (no runtime builds)
-  - Fast startup (< 10 seconds)
-- **NAT Agent** (port 8000): FastAPI backend with LangChain/LangGraph agent
-  - Handles agent reasoning and tool execution
-- **Supervisord**: Process manager for all services
+- **Nginx** (port 3000): Static reverse proxy
+  - Routes `/generate`, `/docs` → NAT Agent (8000)
+  - Routes `/*` → Next.js frontend (3001)
+- **Next.js UI** (port 3001): Modern web interface with SSE streaming, pre-built at image build time
+- **NAT Agent** (port 8000): FastAPI backend — ReAct agent with MCP client connecting to `mcp-server-runai`
+- **mcp-server-runai** (port 8080): Separate pod — exposes all Run:AI platform operations as MCP tools
+- **Supervisord**: Process manager inside the agent container (Nginx + NAT + Next.js)
 
-**Key Improvements:**
-- ✅ Static Nginx configuration (no dynamic generation)
-- ✅ Pre-built frontend (12x faster startup)
-- ✅ Standard reverse proxy patterns
-- ✅ Simplified deployment (33% less code)
+**Agent init flow:** An initContainer in the agent pod polls `mcp-server-runai/ready` before the agent starts, ensuring the MCP server is authenticated and ready before NAT registers tools.
 
-See [`deploy/SIMPLIFICATION_SUMMARY.md`](deploy/SIMPLIFICATION_SUMMARY.md) for full details.
+---
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
 **Required:**
-- `NVIDIA_API_KEY` - NVIDIA API key ([get here](https://build.nvidia.com))
+- `NVIDIA_API_KEY` — NVIDIA API key ([get here](https://build.nvidia.com))
+- `MCP_SERVER_URL` — URL of the `mcp-server-runai` service (auto-derived from subchart when using Helm)
 
 **Run:AI Integration (Required for full functionality):**
-- `RUNAI_CLIENT_ID` - Run:AI client ID for authentication
-- `RUNAI_CLIENT_SECRET` - Run:AI client secret for authentication
-- `RUNAI_BASE_URL` - Run:AI cluster URL (e.g., `https://your-cluster.run.ai`)
-  - **Note:** This URL is automatically used in `workflow.yaml` for API documentation search
-  - Set this to your actual Run:AI cluster URL - no code changes needed!
+- `RUNAI_CLIENT_ID` — Run:AI client ID for authentication
+- `RUNAI_CLIENT_SECRET` — Run:AI client secret for authentication
+- `RUNAI_BASE_URL` — Run:AI cluster URL (e.g., `https://your-cluster.run.ai`)
 
 **Optional:**
-- `GITHUB_TOKEN` - GitHub token (avoids API rate limits for fetching code examples)
-- `RUNAI_FAILURE_DB_PATH` - Custom path for failure analysis database (default: `/tmp` for local, `/data` for K8s)
-- `RUNAI_TEMPLATE_DEBUG` - Enable verbose logging for template executor (`true`/`false`, default: `false`)
-
-**Auto-Detected (Run:Ai):**
-- `RUNAI_PROJECT` - Automatically set by Run:Ai
-- `RUNAI_JOB_NAME` - Automatically set by Run:Ai
+- `GITHUB_TOKEN` — GitHub token (avoids API rate limits for code generation examples)
+- `RUNAI_FAILURE_DB_PATH` — Path for failure analysis database (default: `/tmp` locally, `/data` in K8s)
 
 ### Agent Configuration
 
-Edit `runai-agent/configs/workflow.yaml`:
+Edit `runai-agent/configs/workflow.yaml` to change the model, add tools, or customize behavior:
 
 ```yaml
+llms:
+  demo_llm:
+    _type: nim
+    model_name: meta/llama-3.3-70b-instruct
+    temperature: 0.1
+    max_tokens: 4096
+
+function_groups:
+  mcp_runai:
+    _type: mcp_client
+    server:
+      transport: streamable-http
+      url: ${MCP_SERVER_URL}/mcp
+
 workflow:
-  _type: react              # ReAct agent type
-  llm_name: nvidia_nim      # Use NVIDIA NIM
+  _type: react_agent
   tool_names:
-    - runailabs_environment_info
-    - runai_submit_workload           # Direct job submission
-    - runai_submit_distributed_workload # Distributed training jobs
-    - runai_submit_workspace          # Interactive workspaces (Jupyter, VSCode)
-    - runai_submit_batch              # Batch submission (multiple jobs)
-    - runai_job_status                # Check job status
-    - runai_manage_workload           # Unified lifecycle: suspend, resume, delete
-    - runai_proactive_monitor         # Proactive monitoring & auto-troubleshooting
-    - runai_failure_analyzer          # Advanced failure analysis
-    - runai_template_executor         # Template-based datasource management (fast!)
-    - runai_kubectl_troubleshoot      # Deep troubleshooting with kubectl
-    - runailabs_job_generator         # Generate Python code
+    - runailabs_environment_info    # Cluster overview
+    - runai_kubectl_troubleshoot    # Deep kubectl diagnostics
+    - runai_proactive_monitor       # Continuous monitoring
+    - runai_failure_analyzer        # Pattern analysis & remediation
+    - runai_job_analytics           # Performance analytics
+    - runailabs_job_generator       # Python code generation
+    - runai_nim_benchmark           # NIM GPU benchmarking
+    - runai_docs_helper             # Direct doc links (fast)
+    - runai_docs_search             # Semantic doc search
+    - runai_api_docs                # API documentation search
+    - mcp_runai                     # All Run:AI platform operations
+  llm_name: demo_llm
+  max_iterations: 15
+  max_tool_calls: 15
+  parse_agent_response_max_retries: 3
 ```
+
+### Monitoring Sidecar (Kubernetes)
+
+Enable the monitoring sidecar in Helm values for continuous background monitoring:
+
+```yaml
+monitoring:
+  enabled: true
+  pollInterval: 60
+  slackWebhookUrl: ""   # Optional Slack webhook
+```
+
+---
 
 ## 📚 Documentation
 
@@ -1516,13 +824,14 @@ workflow:
 - **[SIDECAR_DEPLOYMENT.md](docs/SIDECAR_DEPLOYMENT.md)** - Production deployment with monitoring sidecar
 
 ### Feature Documentation
-- **[QUICKSTART_TEMPLATES.md](docs/QUICKSTART_TEMPLATES.md)** - ⚡ Template-based datasource management (5-minute guide)
 - **[PROACTIVE_MONITORING.md](docs/PROACTIVE_MONITORING.md)** - Proactive monitoring guide
 - **[FAILURE_ANALYSIS.md](docs/FAILURE_ANALYSIS.md)** - Advanced failure analysis & pattern recognition
 - **[FAILURE_ANALYSIS_QUICKSTART.md](docs/FAILURE_ANALYSIS_QUICKSTART.md)** - Quick start guide for failure analysis
 
 ### Reference
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
+
+---
 
 ## 🧪 Development
 
@@ -1537,7 +846,7 @@ source .venv/bin/activate
 cd runai-agent
 pip install -e .
 
-# 3. Install webpage_query plugin (required)
+# 3. Install webpage_query plugin (required for docs search)
 pip install "git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.3.1#subdirectory=examples/getting_started/simple_web_query"
 
 # 4. Set environment variables
@@ -1545,6 +854,7 @@ export NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]"
 export RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]"
 export RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]"
 export RUNAI_BASE_URL="https://your-cluster.example.com"
+export MCP_SERVER_URL="http://localhost:8080"  # Running mcp-server-runai instance
 ```
 
 ### Run Backend Only
@@ -1570,23 +880,22 @@ npm run dev
 ### Build Custom Image
 
 ```bash
-# Backend only
-# Quick build (recommended)
 ./deploy/build-docker.sh
-
 # Or manually:
-docker build -t runai-agent-ui:latest -f Dockerfile .
+docker build -t runai-agent:latest -f deploy/Dockerfile .
 ```
+
+---
 
 ## 🐛 Troubleshooting
 
-See [DEPLOYMENT.md](DEPLOYMENT.md#troubleshooting) for comprehensive troubleshooting guide.
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for a comprehensive troubleshooting guide.
 
 **Quick Checks:**
 
 ```bash
-# Check if environment variables are set (without displaying values)
-printenv | grep -E "NVIDIA_API_KEY|RUNAI"
+# Check environment variables (without displaying values)
+printenv | grep -E "NVIDIA_API_KEY|RUNAI|MCP_SERVER"
 
 # Test backend
 curl http://localhost:8000/docs
@@ -1594,15 +903,24 @@ curl http://localhost:8000/docs
 # View logs
 docker logs <container_id>
 
-# Check agent functions
+# List NAT components
 nat info components --types function
 ```
 
+### Kubernetes: Check MCP Server Readiness
+
+```bash
+kubectl get pods -n runai-agent
+kubectl logs -n runai-agent deployment/runai-agent-mcp-server-runai
+```
+
+If the MCP server is restarting repeatedly, check that `RUNAI_CLIENT_ID`, `RUNAI_CLIENT_SECRET`, and `RUNAI_BASE_URL` are correctly set in the secret referenced by the deployment.
+
 ### Enable Agent Reasoning Steps (Advanced)
 
-By default, the agent provides clean, concise output. To see the agent's internal reasoning and tool usage (useful for debugging):
+By default the agent provides clean output. To see internal reasoning and tool calls:
 
-**For Local Development:**
+**Docker:**
 ```bash
 docker run -p 3000:3000 -p 8000:8000 \
   -e NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]" \
@@ -1610,36 +928,27 @@ docker run -p 3000:3000 -p 8000:8000 \
   ghcr.io/runai-professional-services/runai-agent:latest
 ```
 
-**For Helm Deployment:**
-
-Add to your Helm values or use `--set` flag:
+**Helm:**
 ```bash
 helm install runai-agent ./deploy/helm/runai-agent \
   --namespace runai-agent \
   --set frontend.env.NEXT_PUBLIC_ENABLE_INTERMEDIATE_STEPS="true"
 ```
 
-Or add to a `values.yaml` file:
-```yaml
-frontend:
-  env:
-    NEXT_PUBLIC_ENABLE_INTERMEDIATE_STEPS: "true"
-```
-
-This will show the agent's thought process, tool calls, and intermediate results.
+---
 
 ## 🤝 Contributing
 
 This project uses:
 - **Backend**: Python 3.11+, FastAPI, NeMo Agent Toolkit, LangChain
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Infrastructure**: Docker, Kubernetes, Run:AI
+- **Infrastructure**: Docker, Kubernetes, Run:AI, Helm
 
-See our [Contributing Guide](.github/PULL_REQUEST_TEMPLATE.md) and [Cursor Rules](.cursorrules) for development guidelines.
+See our [Contributing Guide](.github/PULL_REQUEST_TEMPLATE.md) for development guidelines.
+
+---
 
 ## 📊 CI/CD Pipeline
-
-This project uses GitHub Actions for automated testing, building, and deployment.
 
 ### 🔄 Automated Workflows
 
@@ -1658,60 +967,48 @@ This project uses GitHub Actions for automated testing, building, and deployment
 - **Multi-platform**: linux/amd64, linux/arm64
 - **Tags**: `latest`, `0.1.39`, `main-sha`
 
-**Pull the latest image:**
 ```bash
+# Pull latest image
 docker pull ghcr.io/runai-professional-services/runai-agent:latest
-```
 
-**Pull a specific version (recommended for production):**
-```bash
+# Pull a specific version (recommended for production)
 docker pull ghcr.io/runai-professional-services/runai-agent:0.1.39
 ```
 
 **Version Convention:**
-- Git tags: `v0.1.39` (with 'v' prefix)
-- Docker image tags: `0.1.39`, `latest` (no 'v' prefix)
-- Helm chart versions: `0.1.39` (no 'v' prefix)
+- Git tags: `v0.1.39` (with `v` prefix)
+- Docker image tags: `0.1.39`, `latest` (no `v` prefix)
+- Helm chart versions: `0.1.39` (no `v` prefix)
 
 #### 🚀 Releases
 - **Automated Releases**: Triggered on merge to `main`
 - **Version Management**: Auto-increments patch version
 - **Changelog**: Automatically updated from commits
-- **GitHub Releases**: Created with release notes
 
-**Manual release:**
 ```bash
-# Go to: Actions → Release → Run workflow
+# Manual release: Actions → Release → Run workflow
 # Specify version (e.g., 0.2.0) and type (patch/minor/major)
 ```
 
 #### ⎈ Helm Chart Publishing
 - **Automated Publishing**: On version tags
 - **Repository**: GitHub Pages
-- **URL**: https://runai-professional-services.github.io/runai-agent
 
-**Add Helm repository:**
 ```bash
 helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
 helm repo update
 helm install runai-agent runai-agent/runai-agent
 ```
 
-**Note:** The Helm chart's `appVersion` field automatically references the correct Docker image tag, ensuring version consistency between the chart and the container image.
-
 #### 🔍 PR Validation
-Every pull request is automatically validated:
 - ✅ Full test suite
 - 🔍 Breaking change detection
 - 📝 CHANGELOG.md validation
 - 🎨 Code quality checks
-- 📚 Documentation checks
 - 📊 PR size analysis
 
 #### 🤖 Dependency Management
-- **Dependabot**: Automated dependency updates
-- **Auto-merge**: Patch and minor updates auto-merged after tests pass
-- **Coverage**: Python, npm, GitHub Actions, Docker
+- **Dependabot**: Automated dependency updates (Python, npm, GitHub Actions, Docker)
 
 ### 📈 Status & Monitoring
 
@@ -1730,11 +1027,9 @@ Every pull request is automatically validated:
 5. Build Docker image: `./deploy/build-docker.sh`
 6. Test Helm chart: `helm lint ./deploy/helm/runai-agent`
 
-**Creating a new release:**
-1. Merge PR to `main` (auto-creates patch release)
-2. Or manually trigger release workflow for specific version
-
 See [.github/workflows/README.md](.github/workflows/README.md) for detailed CI/CD documentation.
+
+---
 
 ## 📄 License
 

@@ -1,197 +1,169 @@
 # Run:AI Agent Helm Chart
 
-Helm chart for deploying the intelligent Run:AI conversational agent with advanced failure analysis and optional monitoring sidecar.
+Helm chart for deploying the intelligent Run:AI conversational agent. Includes
+`mcp-server-runai` as a bundled subchart so a single `helm install` deploys the
+full working stack.
 
-## Features
+## Architecture
 
-- 🤖 **Interactive Chat Interface** - Natural language control of Run:AI clusters
-- 🔬 **Advanced Failure Analysis** - ML-driven root cause analysis with persistent database
-- 📊 **Continuous Monitoring** - Optional sidecar for proactive failure detection
-- 🔒 **Security First** - Kubernetes secrets for sensitive credentials
-- 🎯 **Production Ready** - Configurable resources, RBAC, and storage
+```
+┌─────────────────────────────────────┐
+│           runai-agent               │
+│  ┌───────────────┐                  │
+│  │  nat-agent    │──── MCP HTTP ───►│  mcp-server-runai (subchart)
+│  │  (this chart) │                  │  └─ connects to Run:AI API
+│  └───────────────┘                  │
+└─────────────────────────────────────┘
+```
+
+The agent uses `mcp-server-runai` for all Run:AI platform operations (workloads,
+projects, assets, etc.). The subchart is enabled by default and auto-configured —
+no extra URL wiring needed.
 
 ## Prerequisites
 
 - Kubernetes 1.19+
-- Helm 3.0+
-- Run:AI cluster v2.18+
-- Storage class (any type - EBS, EFS, NFS, etc.)
-- Run:AI API credentials
-- NVIDIA API key (for LLM)
+- Helm 3.8+ (OCI support required for subchart pull)
+- Run:AI cluster v2.x with API access
+- Run:AI OAuth2 credentials (client ID + secret)
+- NVIDIA API key (for the LLM)
 
 ## Quick Start
 
-### 1. Install with Minimum Configuration
+### Install with inline credentials (development)
 
 ```bash
-# Install with inline credentials (development only)
-helm upgrade -i runai-agent ./deploy/helm/runai-agent \
-  --namespace runai-agent \
-  --create-namespace \
-  --set runai.clientId="[YOUR_CLIENT_ID]" \
-  --set runai.clientSecret="[YOUR_CLIENT_SECRET]" \
-  --set runai.baseUrl="https://your-cluster.run.ai" \
-  --set nvidia.apiKey="[YOUR_NVIDIA_API_KEY]"
+helm upgrade -i runai-agent \
+  oci://ghcr.io/runai-professional-services/charts/runai-agent \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.clientId="<client-id>" \
+  --set mcp-server-runai.runai.credentials.clientSecret="<client-secret>" \
+  --set runai.baseUrl="https://myorg.run.ai" \
+  --set runai.clientId="<client-id>" \
+  --set runai.clientSecret="<client-secret>" \
+  --set nvidia.apiKey="<nvidia-api-key>"
 ```
 
-### 2. Install with Existing Secrets (Production)
+### Install with existing Secrets (recommended for production)
 
 ```bash
-# Create secrets first
+# 1. Create namespace
 kubectl create namespace runai-agent
 
+# 2. Create Run:AI credentials secret
+#    Used by both the MCP server (subchart) and the agent's monitoring functions.
+#    Secret keys must be: clientId, clientSecret  (for the subchart)
+#                         RUNAI_CLIENT_ID, RUNAI_CLIENT_SECRET, RUNAI_BASE_URL  (for the agent)
 kubectl create secret generic runai-creds \
   --namespace runai-agent \
-  --from-literal=RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
-  --from-literal=RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
-  --from-literal=RUNAI_BASE_URL="https://your-cluster.run.ai"
+  --from-literal=clientId="<client-id>" \
+  --from-literal=clientSecret="<client-secret>" \
+  --from-literal=RUNAI_CLIENT_ID="<client-id>" \
+  --from-literal=RUNAI_CLIENT_SECRET="<client-secret>" \
+  --from-literal=RUNAI_BASE_URL="https://myorg.run.ai"
 
+# 3. Create NVIDIA API key secret
 kubectl create secret generic nvidia-key \
   --namespace runai-agent \
-  --from-literal=NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]"
+  --from-literal=NVIDIA_API_KEY="<nvidia-api-key>"
 
-# Install using existing secrets
-helm upgrade -i runai-agent ./deploy/helm/runai-agent \
+# 4. Install
+helm upgrade -i runai-agent \
+  oci://ghcr.io/runai-professional-services/charts/runai-agent \
   --namespace runai-agent \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.existingSecret="runai-creds" \
   --set runai.existingSecret="runai-creds" \
   --set nvidia.existingSecret="nvidia-key"
 ```
 
-### 3. Install with Custom Values
+### Install from local chart
 
 ```bash
-# Create custom values file
-cat > my-values.yaml <<EOF
-global:
-  project: "my-project"
-  jobName: "my-agent"
+# Fetch subchart dependencies first
+helm dependency update ./deploy/helm/runai-agent
 
-runai:
-  existingSecret: "runai-creds"
-  
-nvidia:
-  existingSecret: "nvidia-key"
-
-monitoring:
-  enabled: true
-  pollInterval: 30
-
-failureAnalysis:
-  persistence:
-    size: 5Gi
-    storageClassName: "nfs-client"
-
-resources:
-  requests:
-    cpu: "4"
-    memory: "8Gi"
-EOF
-
-# Install with custom values
 helm upgrade -i runai-agent ./deploy/helm/runai-agent \
-  --namespace runai-my-project \
-  --create-namespace \
-  -f my-values.yaml
-```
-
-## Installing from GitHub Packages
-
-The Run:AI Agent Helm chart and Docker images are published to GitHub Packages with each release.
-
-### Add Helm Repository
-
-```bash
-# Add the Helm repository
-helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
-
-# Update repository index
-helm repo update
-```
-
-### Install Latest Version
-
-```bash
-# Install from the published chart
-helm upgrade -i runai-agent runai-agent/runai-agent \
-  --namespace runai-agent \
-  --create-namespace \
-  --set runai.clientId="[YOUR_CLIENT_ID]" \
-  --set runai.clientSecret="[YOUR_CLIENT_SECRET]" \
-  --set runai.baseUrl="https://your-cluster.run.ai" \
-  --set nvidia.apiKey="[YOUR_NVIDIA_API_KEY]"
-```
-
-### Install Specific Version
-
-```bash
-# List available versions
-helm search repo runai-agent/runai-agent --versions
-
-# Install specific version
-helm upgrade -i runai-agent runai-agent/runai-agent \
-  --version 0.1.27 \
-  --namespace runai-agent \
-  --create-namespace \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.existingSecret="runai-creds" \
   --set runai.existingSecret="runai-creds" \
   --set nvidia.existingSecret="nvidia-key"
 ```
 
-**Note:** Docker images are automatically pulled from `ghcr.io/runai-professional-services/runai-agent` and versioned to match the chart release.
+## Using an Existing MCP Server Deployment
+
+If you already have `mcp-server-runai` deployed in your cluster, disable the
+subchart and point the agent at the existing service:
+
+```bash
+helm upgrade -i runai-agent \
+  oci://ghcr.io/runai-professional-services/charts/runai-agent \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.enabled=false \
+  --set mcpServer.url="http://mcp-server-runai.runai-mcp.svc.cluster.local:8080" \
+  --set runai.existingSecret="runai-creds" \
+  --set nvidia.existingSecret="nvidia-key"
+```
 
 ## Configuration
 
-### Global Settings
+### MCP Server (subchart)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `global.namespace` | Kubernetes namespace for agent deployment | `runai-agent` |
-| `global.deploymentName` | Name for the agent deployment | `runai-agent` |
+| `mcp-server-runai.enabled` | Deploy MCP server as a subchart | `true` |
+| `mcp-server-runai.runai.baseUrl` | Run:AI cluster URL | `""` |
+| `mcp-server-runai.runai.credentials.clientId` | OAuth2 client ID | `""` |
+| `mcp-server-runai.runai.credentials.clientSecret` | OAuth2 client secret | `""` |
+| `mcp-server-runai.runai.credentials.existingSecret` | Pre-existing Secret name | `""` |
+| `mcp-server-runai.replicaCount` | MCP server replicas | `1` |
+| `mcpServer.url` | Override MCP URL (leave empty when subchart enabled) | `""` |
 
-### Image Settings
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `image.repository` | Container image repository | `ghcr.io/runai-professional-services/runai-agent` |
-| `image.tag` | Image tag (defaults to Chart.appVersion if empty) | `""` |
-| `image.pullPolicy` | Image pull policy | `Always` |
-
-**Note:** The image tag defaults to the chart's `appVersion` (from `Chart.yaml`) when not specified. This ensures version-pinned deployments that match the chart version. Override with `--set image.tag=<version>` if you need a specific version.
-
-### Run:AI Credentials
+### Agent Image
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `runai.clientId` | Run:AI API client ID | `""` |
-| `runai.clientSecret` | Run:AI API client secret | `""` |
-| `runai.baseUrl` | Run:AI cluster URL | `https://your-cluster.run.ai` |
-| `runai.existingSecret` | Use existing Kubernetes secret | `""` |
+| `image.repository` | Container image | `ghcr.io/runai-professional-services/runai-agent` |
+| `image.tag` | Image tag (defaults to `appVersion`) | `""` |
+| `image.pullPolicy` | Pull policy | `Always` |
+
+### Run:AI Credentials (agent-side)
+
+Used by the agent's built-in monitoring functions (`proactive_monitor`,
+`job_analytics`, `kubectl_troubleshoot`).
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `runai.clientId` | OAuth2 client ID | `""` |
+| `runai.clientSecret` | OAuth2 client secret | `""` |
+| `runai.baseUrl` | Run:AI cluster URL | `""` |
+| `runai.existingSecret` | Pre-existing Secret name (keys: `RUNAI_CLIENT_ID`, `RUNAI_CLIENT_SECRET`, `RUNAI_BASE_URL`) | `""` |
 
 ### NVIDIA API
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `nvidia.apiKey` | NVIDIA API key for LLM | `""` |
-| `nvidia.existingSecret` | Use existing secret | `""` |
+| `nvidia.apiKey` | NVIDIA API key for the LLM | `""` |
+| `nvidia.existingSecret` | Pre-existing Secret name (key: `NVIDIA_API_KEY`) | `""` |
 
 ### Monitoring Sidecar
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `monitoring.enabled` | Enable monitoring sidecar | `true` |
+| `monitoring.enabled` | Enable proactive monitoring sidecar | `true` |
 | `monitoring.pollInterval` | Poll interval in seconds | `60` |
-| `monitoring.resources.requests.cpu` | CPU request | `0.5` |
-| `monitoring.resources.requests.memory` | Memory request | `1Gi` |
 | `monitoring.slackWebhookUrl` | Slack webhook for alerts | `""` |
 
 ### Failure Analysis
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `failureAnalysis.persistence.enabled` | Enable persistent storage | `true` |
+| `failureAnalysis.persistence.enabled` | Persist failure history to PVC | `true` |
 | `failureAnalysis.persistence.size` | PVC size | `2Gi` |
-| `failureAnalysis.persistence.storageClassName` | Storage class name | `""` |
-| `failureAnalysis.persistence.accessModes` | PVC access modes | `[ReadWriteOnce]` |
-| `failureAnalysis.persistence.existingClaim` | Use existing PVC | `""` |
+| `failureAnalysis.persistence.storageClassName` | Storage class | `""` |
+| `failureAnalysis.persistence.existingClaim` | Use an existing PVC | `""` |
 | `failureAnalysis.database.path` | Database file path | `/data/runai_failure_history.db` |
 
 ### Resources
@@ -200,241 +172,88 @@ helm upgrade -i runai-agent runai-agent/runai-agent \
 |-----------|-------------|---------|
 | `resources.requests.cpu` | CPU request | `2` |
 | `resources.requests.memory` | Memory request | `4Gi` |
-| `resources.requests.gpu` | GPU devices | `0` |
 | `resources.limits.cpu` | CPU limit | `4` |
 | `resources.limits.memory` | Memory limit | `8Gi` |
 
-### RBAC
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `rbac.create` | Create RBAC resources | `true` |
-| `rbac.serviceAccountName` | ServiceAccount name | `default` |
-
-### Kubeconfig
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `kubeconfig.existingSecret` | Secret with kubeconfig file | `""` |
-| `kubeconfig.key` | Key in secret | `config` |
-
-## Examples
-
-### Minimal Deployment (No Monitoring)
-
-```yaml
-# values-minimal.yaml
-global:
-  namespace: "runai-agent-dev"
-
-monitoring:
-  enabled: false
-
-failureAnalysis:
-  persistence:
-    enabled: false
-
-runai:
-  existingSecret: "runai-creds"
-
-nvidia:
-  existingSecret: "nvidia-key"
-```
-
-```bash
-helm upgrade -i runai-agent ./deploy/helm/runai-agent \
-  --namespace runai-agent-dev --create-namespace \
-  -f values-minimal.yaml
-```
-
-### Full Production Deployment
-
-```yaml
-# values-production.yaml
-global:
-  namespace: "runai-agent-prod"
-  deploymentName: "runai-agent-prod"
-
-image:
-  repository: "ghcr.io/runai-professional-services/runai-agent"
-  tag: ""  # Uses Chart.appVersion (recommended for version consistency)
-  pullPolicy: IfNotPresent
-
-monitoring:
-  enabled: true
-  pollInterval: 30
-  slackWebhookUrl: "https://hooks.slack.com/services/xxx"
-  resources:
-    requests:
-      cpu: "1"
-      memory: "2Gi"
-
-failureAnalysis:
-  persistence:
-    enabled: true
-    size: 10Gi
-    storageClassName: "nfs-client"
-
-resources:
-  requests:
-    cpu: "4"
-    memory: "8Gi"
-  limits:
-    cpu: "8"
-    memory: "16Gi"
-
-rbac:
-  create: true
-
-kubeconfig:
-  existingSecret: "kubeconfig-secret"
-
-nodeSelector:
-  workload-type: "services"
-```
-
-```bash
-helm upgrade -i runai-agent ./deploy/helm/runai-agent \
-  --namespace runai-agent-prod --create-namespace \
-  -f values-production.yaml
-```
-
 ## Accessing the Agent
 
-### Via Port Forward
-
 ```bash
-# Forward UI port
+# Port-forward the UI
 kubectl port-forward -n runai-agent deployment/runai-agent 3000:3000
 
 # Open browser
 open http://localhost:3000
 ```
 
-### Via Ingress
-
-If ingress is enabled, access the agent at your configured hostname.
-
 ## Upgrading
 
 ```bash
-# Upgrade to new version
-helm upgrade runai-agent ./deploy/helm/runai-agent \
+helm upgrade runai-agent \
+  oci://ghcr.io/runai-professional-services/charts/runai-agent \
   --namespace runai-agent \
-  -f my-values.yaml
-
-# Rollback if needed
-helm rollback runai-agent --namespace runai-agent
+  --reuse-values \
+  --version <new-version>
 ```
 
 ## Uninstalling
 
 ```bash
-# Uninstall the chart
 helm uninstall runai-agent --namespace runai-agent
 
-# Optionally delete the PVC (if you want to remove data)
+# Remove PVC if you want to wipe the failure history database
 kubectl delete pvc -n runai-agent -l app.kubernetes.io/name=runai-agent
-
-# Optionally delete the namespace
-kubectl delete namespace runai-agent
 ```
 
 ## Troubleshooting
 
-### Check Deployment Status
-
 ```bash
-# List releases
-helm list --namespace runai-agent
+# Check all pods (agent + MCP server)
+kubectl get pods -n runai-agent
 
-# Get deployment status
-helm status runai-agent --namespace runai-agent
-
-# Check pod status
-kubectl get pods -n runai-agent -l app.kubernetes.io/name=runai-agent
-```
-
-### View Logs
-
-```bash
-# Main agent logs
+# Agent logs
 kubectl logs -n runai-agent deployment/runai-agent -c nat-agent -f
 
-# Monitoring sidecar logs (if enabled)
-kubectl logs -n runai-agent deployment/runai-agent -c monitor-sidecar -f
+# MCP server logs
+kubectl logs -n runai-agent deployment/runai-agent-mcp-server-runai -f
+
+# Check MCP server is reachable from the agent pod
+kubectl exec -n runai-agent deployment/runai-agent -c nat-agent -- \
+  curl -s http://runai-agent-mcp-server-runai:8080/health
 ```
 
 ### Common Issues
 
-**PVC Pending**
+**Subchart not pulled (`Error: no cached repo found`)**
 ```bash
-# Check PVC status
-kubectl describe pvc -n runai-agent runai-agent-failure-db
-
-# Check available storage classes
-kubectl get storageclass
+helm dependency update ./deploy/helm/runai-agent
 ```
 
-**Secrets Not Found**
+**MCP server unreachable**
+- Verify `kubectl get svc -n runai-agent` shows `runai-agent-mcp-server-runai`
+- Check MCP server pod logs for credential errors
+
+**Secrets not found**
 ```bash
-# Verify secrets exist
 kubectl get secrets -n runai-agent
-
-# Create missing secrets
-kubectl create secret generic runai-creds \
-  --namespace runai-agent \
-  --from-literal=RUNAI_CLIENT_ID="xxx" \
-  --from-literal=RUNAI_CLIENT_SECRET="xxx" \
-  --from-literal=RUNAI_BASE_URL="https://xxx"
-```
-
-**Pod Not Starting**
-```bash
-# Describe deployment
-kubectl describe deployment -n runai-agent runai-agent
-
-# Check pod events
-kubectl describe pod -n runai-agent -l app.kubernetes.io/name=runai-agent
 ```
 
 ## Development
 
-### Validate Chart
-
 ```bash
-# Lint the chart
+# Pull subchart dependencies
+helm dependency update ./deploy/helm/runai-agent
+
+# Lint
 helm lint ./deploy/helm/runai-agent
 
-# Dry-run installation
+# Dry-run
 helm install runai-agent ./deploy/helm/runai-agent \
-  --namespace test \
-  --dry-run --debug \
+  --namespace test --dry-run --debug \
+  --set mcp-server-runai.runai.baseUrl=https://test.run.ai \
+  --set mcp-server-runai.runai.credentials.clientId=test \
+  --set mcp-server-runai.runai.credentials.clientSecret=test \
   --set runai.clientId=test \
   --set runai.clientSecret=test \
-  --set runai.baseUrl=test \
+  --set runai.baseUrl=https://test.run.ai \
   --set nvidia.apiKey=test
 ```
-
-### Template Rendering
-
-```bash
-# Render templates locally
-helm template runai-agent ./deploy/helm/runai-agent \
-  --set runai.clientId=test \
-  --set runai.clientSecret=test \
-  --set runai.baseUrl=test \
-  --set nvidia.apiKey=test \
-  > rendered.yaml
-```
-
-## Support
-
-- Documentation: `docs/`
-- Issues: [GitLab Issues](https://gitlab-master.nvidia.com/ape-repo/astra-projects/runai-agent-test/issues)
-- Slack: #runai-agent
-
-## License
-
-Copyright © 2024 NVIDIA Corporation
-

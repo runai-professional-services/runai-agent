@@ -1,5 +1,6 @@
 """Shared helper functions and utilities for Run:AI agent"""
 
+import json
 import logging
 import os
 import asyncio
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Import requests for GitHub API calls
 try:
-    import requests
+    import requests  # noqa: F401
     REQUESTS_AVAILABLE = True
 except ImportError:
     logger.warning("Requests not available. Repository indexing will be disabled.")
@@ -62,8 +63,8 @@ def _get_secure_runai_config():
 
 
 def _coerce_optional_int(value: Optional[Union[int, str]], default: int) -> int:
-    """Coerce LLM tool input to int; treat None/'None'/empty as missing and return default."""
-    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "")):
+    """Coerce LLM tool input to int; treat None/'None'/'null'/empty as missing and return default."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "null", "")):
         return default
     try:
         return int(value)
@@ -71,12 +72,23 @@ def _coerce_optional_int(value: Optional[Union[int, str]], default: int) -> int:
         return default
 
 
+def _coerce_optional_bool(value: Optional[Union[bool, str]]) -> Optional[bool]:
+    """Coerce LLM tool input to Optional[bool]; treat 'null'/'None'/empty as None."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in ("none", "null", "")):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "yes", "1")
+    return bool(value)
+
+
 def _normalize_optional_str_none(value: Optional[Any]) -> Optional[str]:
-    """Treat string 'None' or empty as None; otherwise return value as str (for project, etc.)."""
+    """Treat string 'None'/'null'/empty as None; otherwise return value as str (for project, etc.)."""
     if value is None:
         return None
     s = str(value).strip().lower()
-    if s in ("none", ""):
+    if s in ("none", "null", ""):
         return None
     return str(value).strip()
 
@@ -167,6 +179,58 @@ def _search_workload_by_name_helper(client, job_name_to_search: str, project_id:
         import traceback
         logger.debug(f"Traceback: {traceback.format_exc()}")
         return None, None
+
+
+async def call_mcp_tool(mcp_base_url: str, tool_name: str, arguments: dict) -> dict:
+    """Call a tool on the MCP server via HTTP (MCP streamable HTTP transport)."""
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": tool_name,
+            "arguments": arguments,
+        },
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{mcp_base_url.rstrip('/')}/mcp",
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+            },
+            timeout=aiohttp.ClientTimeout(total=30),
+        ) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+            if "text/event-stream" in content_type:
+                text = await resp.text()
+                for line in text.splitlines():
+                    if line.startswith("data: "):
+                        data = json.loads(line[6:])
+                        if "result" in data:
+                            return _extract_mcp_result(data["result"])
+                        elif "error" in data:
+                            raise RuntimeError(f"MCP tool error: {data['error']}")
+                raise RuntimeError("No result found in MCP SSE stream")
+            else:
+                data = await resp.json()
+                if "result" in data:
+                    return _extract_mcp_result(data["result"])
+                elif "error" in data:
+                    raise RuntimeError(f"MCP tool error: {data['error']}")
+                raise RuntimeError(f"Unexpected MCP response: {data}")
+
+
+def _extract_mcp_result(result: dict) -> dict:
+    """Extract and parse the text content from an MCP tool result."""
+    for item in result.get("content", []):
+        if item.get("type") == "text":
+            try:
+                return json.loads(item["text"])
+            except (json.JSONDecodeError, TypeError):
+                return {"text": item["text"]}
+    return result
 
 
 class RunapyExamplesFetcher:

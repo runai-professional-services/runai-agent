@@ -108,33 +108,9 @@ Project `{job_project}` is not in the allowed list.
             # 5. AI-Powered Diagnosis
             response += "## 🧠 Diagnosis & Recommendations\n\n"
             diagnosis = analyze_job_issues(pod_info, logs if config.include_logs else "", events if config.include_events else "")
-            response += diagnosis + "\n\n---\n\n"
-            
-            # 6. Helpful Commands
-            response += f"""
-## 🛠️ Useful Commands
+            response += diagnosis
 
-```bash
-# Get pod details
-kubectl get pods -n {namespace} -l workloadName={job_name}
-
-# Describe pod (detailed info)
-kubectl describe pod -n {namespace} -l workloadName={job_name}
-
-# Get logs (last 100 lines)
-kubectl logs -n {namespace} -l workloadName={job_name} --tail=100
-
-# Get events
-kubectl get events -n {namespace} --field-selector involvedObject.name={job_name}
-
-# Delete job (if needed)
-kubectl delete -n {namespace} interactiveworkload {job_name}
-# OR for training jobs
-kubectl delete -n {namespace} training {job_name}
-```
-"""
-            
-            return response
+            return response.rstrip() + "\n"
             
         except Exception as e:
             logger.error(f"Error during troubleshooting: {str(e)}")
@@ -234,7 +210,7 @@ kubectl delete -n {namespace} training {job_name}
             # Get pod by workload label
             result = subprocess.run(
                 ["kubectl", "get", "pods", "-n", namespace, 
-                 f"-l", f"workloadName={job_name}",
+                 "-l", f"workloadName={job_name}",
                  "-o", "wide"],
                 capture_output=True,
                 text=True,
@@ -340,18 +316,25 @@ Possible reasons:
             )
             
             if result.returncode != 0 or not result.stdout.strip():
-                # Try alternative: get all recent events and filter
-                result = subprocess.run(
+                # Fallback: fetch all recent events and filter in Python
+                result2 = subprocess.run(
                     ["kubectl", "get", "events", "-n", namespace,
-                     "--sort-by='.lastTimestamp'",
-                     "|", "grep", job_name],
+                     "--sort-by=.lastTimestamp"],
                     capture_output=True,
                     text=True,
                     timeout=10,
-                    shell=True,
                     env=kubectl_env
                 )
-            
+                if result2.returncode == 0 and result2.stdout.strip():
+                    lines = result2.stdout.splitlines()
+                    header = lines[0] if lines else ""
+                    matches = [line for line in lines[1:] if job_name in line]
+                    result_stdout = "\n".join([header] + matches) if matches else ""
+                    # Replace result stdout for the check below
+                    class _R:
+                        stdout = result_stdout
+                    result = _R()
+
             if not result.stdout.strip():
                 return """
 ℹ️ **No recent events found**

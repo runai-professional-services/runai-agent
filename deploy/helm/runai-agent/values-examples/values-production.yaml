@@ -10,7 +10,23 @@ image:
   tag: ""  # Uses Chart.appVersion for version-pinned deployments
   pullPolicy: IfNotPresent
 
-# Use existing secrets for security
+# MCP server — bundled subchart (provides all Run:AI platform operations)
+mcp-server-runai:
+  enabled: true
+  replicaCount: 2  # HA for production
+  runai:
+    baseUrl: "https://myorg.run.ai"
+    credentials:
+      existingSecret: "runai-creds-prod"  # Secret keys: clientId, clientSecret
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "1"
+
+# Run:AI credentials for monitoring functions (proactive_monitor, job_analytics)
 runai:
   existingSecret: "runai-creds-prod"
 

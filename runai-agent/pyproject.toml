@@ -7,10 +7,11 @@ name = "runai-agent"
 version = "0.1.45"
 description = "RunAI Labs Agent with RAG-enhanced code search and job generation"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11"
 dependencies = [
     "nvidia-nat>=1.3.0",
-    "runapy>=1.0.0",
+    "nvidia-nat-mcp>=1.3.0",
+    "runapy>=1.0.0",  # Used by proactive_monitor, job_analytics, kubectl_troubleshoot; remove after full MCP migration
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
     "aiohttp>=3.9.0",

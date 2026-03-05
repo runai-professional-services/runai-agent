@@ -43,6 +43,22 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       
+      {{- if and ((index .Values "mcp-server-runai").enabled) (not .Values.mcpServer.url) }}
+      initContainers:
+        - name: wait-for-mcp-server
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MCP server to be ready at {{ include "runai-agent.mcpServerUrl" . }}/ready ..."
+              until wget -qO /dev/null "{{ include "runai-agent.mcpServerUrl" . }}/ready"; do
+                echo "  MCP server not ready (503), retrying in 5s..."
+                sleep 5
+              done
+              echo "MCP server is ready."
+      {{- end }}
+
       containers:
         # Main agent container
         - name: nat-agent
@@ -58,6 +74,10 @@ spec:
               protocol: TCP
           
           env:
+            # MCP server URL — auto-derived from subchart when mcp-server-runai.enabled=true
+            - name: MCP_SERVER_URL
+              value: {{ include "runai-agent.mcpServerUrl" . | quote }}
+
             # NVIDIA API Key
             - name: NVIDIA_API_KEY
               {{- if .Values.nvidia.existingSecret }}
@@ -183,7 +203,11 @@ spec:
               python scripts/monitor_sidecar.py --poll-interval {{ .Values.monitoring.pollInterval }}
           
           env:
-            # Run:AI credentials
+            # MCP server URL — auto-derived from subchart when mcp-server-runai.enabled=true
+            - name: MCP_SERVER_URL
+              value: {{ include "runai-agent.mcpServerUrl" . | quote }}
+
+            # Run:AI credentials (used by proactive_monitor, job_analytics, kubectl_troubleshoot)
             - name: RUNAI_CLIENT_ID
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -196,7 +220,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_CLIENT_ID
               {{- end }}
-            
+
             - name: RUNAI_CLIENT_SECRET
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -209,7 +233,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_CLIENT_SECRET
               {{- end }}
-            
+
             - name: RUNAI_BASE_URL
               {{- if .Values.runai.existingSecret }}
               valueFrom:
@@ -222,7 +246,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-runai-creds
                   key: RUNAI_BASE_URL
               {{- end }}
-            
+
             # NVIDIA API Key
             - name: NVIDIA_API_KEY
               {{- if .Values.nvidia.existingSecret }}
@@ -236,7 +260,7 @@ spec:
                   name: {{ include "runai-agent.fullname" . }}-nvidia-key
                   key: NVIDIA_API_KEY
               {{- end }}
-            
+
             # Failure database path
             - name: RUNAI_FAILURE_DB_PATH
               value: {{ .Values.failureAnalysis.database.path | quote }}

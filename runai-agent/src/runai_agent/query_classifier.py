@@ -7,7 +7,7 @@ embedding model for different types of queries in the RunAI agent system.
 
 import re
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Tuple
 from enum import Enum
 from dataclasses import dataclass
 

@@ -8,8 +8,8 @@ Uses the same SQLite DB as failure analysis (job_run_history table).
 
 import os
 import asyncio
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Union
+from datetime import datetime
+from typing import Optional, List, Union
 from pydantic import Field
 from nat.builder.builder import Builder
 from nat.builder.function_info import FunctionInfo

@@ -47,7 +47,7 @@ jobs:
       - name: Get chart version
         id: chart_version
         run: |
-          VERSION=$(grep 'version:' deploy/helm/runai-agent/Chart.yaml | awk '{print $2}')
+          VERSION=$(grep '^version:' deploy/helm/runai-agent/Chart.yaml | awk '{print $2}')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Chart version: $VERSION"
 

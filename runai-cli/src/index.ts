@@ -31,7 +31,7 @@ const program = new Command();
 program
   .name('runai-cli')
   .description('Lightweight CLI for RunAI Agent')
-  .version('0.1.0');
+  .version('0.1.1');
 
 // Submit command - natural language job submission (NEW!)
 program

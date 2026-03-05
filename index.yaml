@@ -2,8 +2,36 @@ apiVersion: v1
 entries:
   runai-agent:
   - apiVersion: v2
+    appVersion: 0.1.46
+    created: "2026-03-05T22:10:20.841975186Z"
+    dependencies:
+    - condition: mcp-server-runai.enabled
+      name: mcp-server-runai
+      repository: oci://ghcr.io/runai-professional-services/charts
+      version: ~0.1.0
+    description: Intelligent conversational agent for Run:AI cluster management with
+      advanced failure analysis
+    digest: 5ae0a1d53abec11c484d95ed3cacc25deb05215149ef2279e7733307e43ed87d
+    home: https://github.com/runai-professional-services/runai-agent
+    keywords:
+    - runai
+    - ai
+    - machine-learning
+    - nvidia
+    - kubernetes
+    maintainers:
+    - name: Brad Soper
+    - name: Vivek Kolasani
+    name: runai-agent
+    sources:
+    - https://github.com/runai-professional-services/runai-agent
+    type: application
+    urls:
+    - https://runai-professional-services.github.io/runai-agent/runai-agent-0.1.46.tgz
+    version: 0.1.46
+  - apiVersion: v2
     appVersion: 0.1.45
-    created: "2026-02-10T18:08:30.586922133Z"
+    created: "2026-03-05T22:10:20.840195346Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 7520afc6ef0db81712caa75ea544962795e76d1f7e9084972b805d0781e45d44
@@ -26,7 +54,7 @@ entries:
     version: 0.1.45
   - apiVersion: v2
     appVersion: 0.1.44
-    created: "2026-02-10T18:08:30.586365826Z"
+    created: "2026-03-05T22:10:20.839615673Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 19957c4c38d9062f2e5974af40b116262c968428d8cfac07104525cca66c83c8
@@ -49,7 +77,7 @@ entries:
     version: 0.1.44
   - apiVersion: v2
     appVersion: 0.1.43
-    created: "2026-02-10T18:08:30.585829084Z"
+    created: "2026-03-05T22:10:20.838938116Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 8d7c448fc7bd92668c11af14a6c6a7ed03edde6bb4a51cefb630ca4287e49c77
@@ -72,7 +100,7 @@ entries:
     version: 0.1.43
   - apiVersion: v2
     appVersion: 0.1.42
-    created: "2026-02-10T18:08:30.585309906Z"
+    created: "2026-03-05T22:10:20.838400983Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: c8eb4dd9e2afa37185374fbefa2be7859f9bb7986eae7ebf4be490b07785369b
@@ -95,7 +123,7 @@ entries:
     version: 0.1.42
   - apiVersion: v2
     appVersion: 0.1.41
-    created: "2026-02-10T18:08:30.584758296Z"
+    created: "2026-03-05T22:10:20.83789562Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: b9400a943ef5c5c7b4ceef9901c9221041efea96c5c4bf3225280aac39917b88
@@ -118,7 +146,7 @@ entries:
     version: 0.1.41
   - apiVersion: v2
     appVersion: 0.1.40
-    created: "2026-02-10T18:08:30.584217247Z"
+    created: "2026-03-05T22:10:20.837357345Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 790520d71020de5deefec9bd34fb33267adb9598069faae6fd9ba6d6908d1a71
@@ -141,7 +169,7 @@ entries:
     version: 0.1.40
   - apiVersion: v2
     appVersion: 0.1.39
-    created: "2026-02-10T18:08:30.583623139Z"
+    created: "2026-03-05T22:10:20.836818279Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: d281dd22fe4e0bd8b883132725f192f7de8e33fa3dbbb2e0d7dc543d0f2c0d45
@@ -164,7 +192,7 @@ entries:
     version: 0.1.39
   - apiVersion: v2
     appVersion: 0.1.37
-    created: "2026-02-10T18:08:30.583043738Z"
+    created: "2026-03-05T22:10:20.83625652Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: f26ddcde7e50aa4bfa1fd06f155b4472e65eff99709b91225aab09781666dda1
@@ -185,4 +213,4 @@ entries:
     urls:
     - https://runai-professional-services.github.io/runai-agent/runai-agent-0.1.37.tgz
     version: 0.1.37
-generated: "2026-02-10T18:08:30.582255177Z"
+generated: "2026-03-05T22:10:20.835501787Z"

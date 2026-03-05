@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.46] - 2026-03-05
+
+### Changed
+- Feature/mcp server (#77) (d87a565)
+
+
 ## [0.1.45] - 2026-02-10
 
 ### Changed
@@ -158,5 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.44]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.44
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.45...HEAD
 [0.1.45]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.45
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.46...HEAD
+[0.1.46]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.46

@@ -35,10 +35,10 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 
 ## 🎯 Features
 
-- 🤖 **Intelligent Agent** - Powered by `meta/llama-3.3-70b-instruct` via NVIDIA NIM with ReAct reasoning
+- 🤖 **Intelligent Agent** - Powered by `nvidia/nemotron-3-nano-30b-a3b` via NVIDIA NIM with ReAct reasoning
 - 💬 **Web UI** - Beautiful, responsive chat interface with real-time streaming
 - 🔧 **Run:AI Integration via MCP Server** - All platform operations (projects, workloads, node pools, departments, users, access rules, datasources) via `mcp-server-runai`
-- 🚀 **Job Submission** - Submit training, inference, and workspace workloads with built-in confirmation workflow
+- 🚀 **Job Submission** - Submit training, inference, and workspace workloads directly from natural language
 - 🔄 **Unified Lifecycle Management** - Suspend, resume, and delete any workload type
 - 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with optional Slack alerts
 - 🔬 **Advanced Failure Analysis** - Pattern recognition, cross-job correlation, and automated remediation suggestions
@@ -70,33 +70,83 @@ export KMP_DUPLICATE_LIB_OK=TRUE
 Deploy the agent with all features enabled using Helm (recommended deployment method). The Helm chart includes `mcp-server-runai` as an optional subchart — enabled by default.
 
 ```bash
-# 1. Create namespace and secrets
-kubectl create namespace runai-agent
-
-kubectl create secret generic runai-creds \
-  --namespace runai-agent \
-  --from-literal=RUNAI_CLIENT_ID="[YOUR_CLIENT_ID]" \
-  --from-literal=RUNAI_CLIENT_SECRET="[YOUR_CLIENT_SECRET]" \
-  --from-literal=RUNAI_BASE_URL="https://your-cluster.run.ai"
-
-kubectl create secret generic nvidia-key \
-  --namespace runai-agent \
-  --from-literal=NVIDIA_API_KEY="[YOUR_NVIDIA_API_KEY]"
-
-# 2. Install with Helm
-helm install runai-agent ./deploy/helm/runai-agent \
-  --namespace runai-agent \
-  --set runai.existingSecret="runai-creds" \
-  --set nvidia.existingSecret="nvidia-key" \
-  --set failureAnalysis.persistence.storageClassName="your-rwx-storage-class"
+# 1. Add the Helm repo
+helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
+helm repo update
 ```
 
-**Features Included:**
-- ✅ `mcp-server-runai` subchart (all Run:AI platform operations)
-- ✅ Monitoring sidecar (continuous failure detection)
-- ✅ Persistent failure database (2Gi PVC)
-- ✅ RBAC for kubectl access
-- ✅ Auto-configured secrets
+#### Option 1 — Existing Secrets (recommended for production)
+
+```bash
+# Create namespace
+kubectl create namespace runai-agent
+
+# Create a combined secret for Run:AI credentials
+# Keys clientId/clientSecret are used by the MCP server subchart;
+# RUNAI_CLIENT_ID/RUNAI_CLIENT_SECRET/RUNAI_BASE_URL are used by the agent.
+kubectl create secret generic runai-creds \
+  --namespace runai-agent \
+  --from-literal=clientId="<client-id>" \
+  --from-literal=clientSecret="<client-secret>" \
+  --from-literal=RUNAI_CLIENT_ID="<client-id>" \
+  --from-literal=RUNAI_CLIENT_SECRET="<client-secret>" \
+  --from-literal=RUNAI_BASE_URL="https://myorg.run.ai"
+
+# Create NVIDIA API key secret
+kubectl create secret generic nvidia-key \
+  --namespace runai-agent \
+  --from-literal=NVIDIA_API_KEY="<nvidia-api-key>"
+
+# Install
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.existingSecret="runai-creds" \
+  --set runai.existingSecret="runai-creds" \
+  --set nvidia.existingSecret="nvidia-key"
+```
+
+#### Option 2 — Inline credentials (quick start / development)
+
+```bash
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.clientId="<client-id>" \
+  --set mcp-server-runai.runai.credentials.clientSecret="<client-secret>" \
+  --set runai.baseUrl="https://myorg.run.ai" \
+  --set runai.clientId="<client-id>" \
+  --set runai.clientSecret="<client-secret>" \
+  --set nvidia.apiKey="<nvidia-api-key>"
+```
+
+#### Option 3 — Values file
+
+```bash
+# Export default values, edit, then install
+helm show values runai-agent/runai-agent > values.yaml
+# Edit values.yaml with your settings
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent --create-namespace \
+  -f values.yaml
+```
+
+#### Upgrade
+
+```bash
+helm upgrade runai-agent runai-agent/runai-agent \
+  --namespace runai-agent \
+  --reuse-values \
+  --version <new-version>
+```
+
+#### Uninstall
+
+```bash
+helm uninstall runai-agent --namespace runai-agent
+# Optional: remove PVC to wipe the failure history database
+kubectl delete pvc -n runai-agent -l app.kubernetes.io/name=runai-agent
+```
 
 See [Helm Chart README](deploy/helm/runai-agent/README.md) for advanced configuration options.
 
@@ -116,7 +166,8 @@ kubectl create secret generic runai-creds \
   --from-literal=clientSecret="[YOUR_CLIENT_SECRET]"
 
 # 2. Install only the MCP server subchart
-helm install mcp-server-runai ./deploy/helm/runai-agent/charts/mcp-server-runai-*.tgz \
+helm install mcp-server-runai \
+  oci://ghcr.io/runai-professional-services/charts/mcp-server-runai \
   --namespace runai-mcp \
   --set runai.baseUrl="https://your-cluster.run.ai" \
   --set runai.credentials.existingSecret="runai-creds" \
@@ -283,12 +334,14 @@ spec:
 │           │   ├── job_analytics.py       # Execution trends & anomaly detection
 │           │   ├── job_generator.py       # Python code generation from GitHub
 │           │   ├── kubectl_troubleshoot.py # Deep kubectl diagnostics
+│           │   ├── list_resources.py      # Wrapper for all MCP list operations
 │           │   ├── nim_benchmark.py       # NIM LLM GPU benchmarking
 │           │   ├── proactive_monitor.py   # Proactive monitoring & auto-troubleshoot
 │           │   └── runai_docs_helper.py   # Direct links to Run:AI documentation
 │           ├── middleware/            # Request middleware
 │           ├── security/              # Security utilities
 │           ├── utils/                 # Shared utilities
+│           ├── query_classifier.py    # Query routing and classification
 │           └── register.py            # Function registration with NAT
 ├── deploy/
 │   ├── Dockerfile                    # Combined container (Nginx + NAT + Next.js)
@@ -305,7 +358,8 @@ spec:
 │   ├── SIDECAR_DEPLOYMENT.md
 │   ├── PROACTIVE_MONITORING.md
 │   ├── FAILURE_ANALYSIS.md
-│   └── FAILURE_ANALYSIS_QUICKSTART.md
+│   ├── FAILURE_ANALYSIS_QUICKSTART.md
+│   └── BATCH_SUBMISSION.md
 ├── runai-cli/                        # TypeScript CLI for remote agent connection
 │   ├── docs/
 │   │   ├── REMOTE_CONNECTION.md
@@ -407,15 +461,7 @@ spec:
 
 ## 🚀 Submitting Jobs with the Agent
 
-The agent submits workloads directly to your Run:AI cluster via the MCP server's `submit_training`, `submit_inference`, and `submit_workspace` tools.
-
-### 🔒 Confirmation Workflow
-
-Before submitting any workload, the agent **always** shows a preview and asks for confirmation:
-
-1. Show the job spec for review
-2. Wait for explicit user approval ("yes", "confirm", "proceed", etc.)
-3. Submit only after confirmation — or cancel if the user declines
+The agent submits workloads directly to your Run:AI cluster via the MCP server's `submit_training`, `submit_inference`, and `submit_workspace` tools. Jobs are submitted immediately — no confirmation step required.
 
 ### 📝 Job Submission Examples
 
@@ -426,18 +472,6 @@ Submit a training job called my-training-job to project-01 with image pytorch/py
 ```
 
 **Agent Response:**
-```
-Here's the job I'll submit:
-
-Name: my-training-job
-Project: project-01
-Image: pytorch/pytorch:latest
-GPUs: 2
-
-Shall I go ahead and submit this?
-```
-
-After confirmation:
 ```
 ✅ Training job submitted successfully!
 
@@ -517,22 +551,8 @@ Resume the job "my-training-job" in project-01
 
 ### 🗑️ Delete a Job
 
-Deletion requires explicit user confirmation before the agent calls `delete_training` / `delete_workspace` / `delete_inference`.
-
-**Step 1 - Request:**
 ```
 Delete the job "old-training-job" from project-01
-```
-
-**Agent Response:**
-```
-⚠️ You are about to permanently delete 'old-training-job' from project-01.
-This action cannot be undone. Confirm?
-```
-
-**Step 2 - Confirm:**
-```
-yes
 ```
 
 **Agent Response:**
@@ -771,7 +791,7 @@ Edit `runai-agent/configs/workflow.yaml` to change the model, add tools, or cust
 llms:
   demo_llm:
     _type: nim
-    model_name: meta/llama-3.3-70b-instruct
+    model_name: nvidia/nemotron-3-nano-30b-a3b
     temperature: 0.1
     max_tokens: 4096
 

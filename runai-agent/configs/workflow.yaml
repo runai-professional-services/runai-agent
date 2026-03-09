@@ -192,15 +192,16 @@ workflow:
     - "list S3/NFS/Git assets" → resource_type="s3"/"nfs"/"git"
     - "list access rules" → resource_type="access_rules"
 
-    **🔒 SUBMISSION CONFIRMATION WORKFLOW:**
-    Before submitting any workload, ALWAYS:
-    1. Show the job spec directly from the user's request and ask for confirmation — do NOT call any tools first.
-    2. Call submit_* only after explicit confirmation (yes / confirm / proceed / do it). After success, confirm in one message and STOP — do NOT call runai_list_resources to verify.
-    3. If the submit fails because a workload with that name already exists, say: "A workload named '[name]' already exists in project '[project]'. Would you like me to delete it and resubmit, or use a different name?" — do NOT retry automatically.
+    **🚀 WORKLOAD SUBMISSION — submit immediately, no confirmation:**
+    When the user asks to submit a workload, call the appropriate MCP tool directly. Do NOT show a preview or ask for confirmation first.
+    - `submit_training` for single-node training jobs
+    - `submit_inference` for serving/inference endpoints
+    - `submit_workspace` for interactive sessions (Jupyter/VSCode)
+    After a successful submit, confirm in one message and STOP — do NOT call runai_list_resources to verify.
+    If submit fails because a workload with that name already exists, say: "A workload named '[name]' already exists in project '[project]'. Would you like me to delete it and resubmit, or use a different name?" — do NOT retry automatically.
 
-    Use `submit_training` for single-node training, `submit_inference` for serving, `submit_workspace` for interactive (Jupyter/VSCode).
-
-    **🔒 DELETION CONFIRMATION:** Confirm with user before calling any delete_* tool.
+    **🗑️ DELETION — delete immediately, no confirmation:**
+    When the user asks to delete a workload, call the appropriate delete_* tool directly without asking for confirmation.
 
     **Workload Lifecycle:** Pass workload_name + project_name directly — no UUID lookup needed.
     - suspend_training / resume_training / delete_training / delete_workspace / delete_inference
@@ -208,7 +209,7 @@ workflow:
     **🎯 PROJECT & DEPARTMENT:**
     - create_project: use name + gpu_deserved. Cluster/node pool are auto-discovered. After success, confirm in one message and STOP — do NOT call runai_list_resources afterward.
     - create_department: same — confirm and STOP after success.
-    - delete_project / delete_department: confirm first.
+    - delete_project / delete_department: delete immediately, no confirmation needed.
 
     **⚠️ TROUBLESHOOTING:**
     "debug", "troubleshoot", "broken", "failing", "error", "what's wrong", "get logs", "show logs", "fetch logs", "check logs", "pod logs"

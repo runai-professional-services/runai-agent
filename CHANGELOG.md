@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.47] - 2026-03-09
+
+### Changed
+- Hotfix/require confirm (#78) (f662fa2)
+- fix(ci): anchor grep to start of line in helm-publish version extraction (a569c90)
+
+
 ## [0.1.46] - 2026-03-05
 
 ### Changed
@@ -166,5 +173,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.45]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.45
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.46...HEAD
 [0.1.46]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.46
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.47...HEAD
+[0.1.47]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.47

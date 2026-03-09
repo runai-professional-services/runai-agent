@@ -87,6 +87,14 @@ functions:
     _type: runai_list_resources
     description: "List any Run:AI resource with clean formatted output. Use for: list projects, list departments, list training jobs, list workspaces, list inferences, list node pools, list users, list roles, list PVCs/datasources, list access rules."
 
+  runai_nim_inference:
+    _type: runai_nim_inference
+    description: "Submit an NVIDIA NIM inference endpoint on Run:AI. Automatically sets NIM defaults (port 8000, NIM_SERVER_PORT, NIM_JSONL_LOGGING, NIM_LOG_LEVEL) and wires NGC_API_KEY from a Kubernetes Secret. Use when the user asks to deploy, start, or serve a NIM model."
+    default_serving_port: 8000
+    default_gpu_devices: 1
+    default_cpu_cores: 4.0
+    default_cpu_memory: "8G"
+
   runai_nim_benchmark:
     _type: runai_nim_benchmark
     description: |
@@ -145,6 +153,7 @@ workflow:
     - runai_failure_analyzer
     - runai_job_analytics
     - runailabs_job_generator
+    - runai_nim_inference  # Deploy NIM inference endpoints with correct defaults
     - runai_nim_benchmark  # NIM LLM benchmarking (H100, H200, A100)
     - runai_docs_helper  # Direct links to known topics (fast, reliable)
     - runai_docs_search  # Semantic search (slower, may miss pages)
@@ -160,6 +169,7 @@ workflow:
     - runai_kubectl_troubleshoot
     - runailabs_job_generator
     - runai_failure_analyzer
+    - runai_nim_inference
     - runai_nim_benchmark
     - runai_proactive_monitor
     - runai_list_resources
@@ -172,6 +182,13 @@ workflow:
     **📊 JOB PERFORMANCE ANALYTICS → runai_job_analytics:**
     "job performance analytics", "execution trends", "how long do jobs take", "failure rates", "jobs taking too long", "anomaly"
     → Call runai_job_analytics. Use defaults (last 7 days, all projects) if not specified — do NOT ask.
+
+    **🤖 NIM INFERENCE DEPLOYMENT → runai_nim_inference:**
+    "deploy NIM", "run NIM", "start NIM", "NIM model", "NIM endpoint", "NIM inference", "serve NIM", "deploy inference endpoint"
+    → Call runai_nim_inference with name, project_name, image, and ngc_api_key_secret.
+    → Always ask for ngc_api_key_secret (K8s secret name holding NGC_API_KEY) if not provided — NIM models require it.
+    → Port defaults to 8000, NIM env vars (NIM_SERVER_PORT, NIM_JSONL_LOGGING, NIM_LOG_LEVEL) are set automatically.
+    → Submit immediately — no confirmation required.
 
     **🚀 NIM BENCHMARK → runai_nim_benchmark:**
     "benchmark", "NIM benchmark", "throughput test", "latency test", "GPU performance", "benchmark on H100/H200/A100"

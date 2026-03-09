@@ -30,11 +30,47 @@ no extra URL wiring needed.
 
 ## Quick Start
 
-### Install with inline credentials (development)
+```bash
+# Add the Helm repo
+helm repo add runai-agent https://runai-professional-services.github.io/runai-agent
+helm repo update
+```
+
+### Option 1 — Existing Secrets (recommended for production)
 
 ```bash
-helm upgrade -i runai-agent \
-  oci://ghcr.io/runai-professional-services/charts/runai-agent \
+# Create namespace
+kubectl create namespace runai-agent
+
+# Create a combined Run:AI credentials secret.
+# Keys clientId/clientSecret are used by the MCP server subchart;
+# RUNAI_CLIENT_ID/RUNAI_CLIENT_SECRET/RUNAI_BASE_URL are used by the agent.
+kubectl create secret generic runai-creds \
+  --namespace runai-agent \
+  --from-literal=clientId="<client-id>" \
+  --from-literal=clientSecret="<client-secret>" \
+  --from-literal=RUNAI_CLIENT_ID="<client-id>" \
+  --from-literal=RUNAI_CLIENT_SECRET="<client-secret>" \
+  --from-literal=RUNAI_BASE_URL="https://myorg.run.ai"
+
+# Create NVIDIA API key secret
+kubectl create secret generic nvidia-key \
+  --namespace runai-agent \
+  --from-literal=NVIDIA_API_KEY="<nvidia-api-key>"
+
+# Install
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent --create-namespace \
+  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
+  --set mcp-server-runai.runai.credentials.existingSecret="runai-creds" \
+  --set runai.existingSecret="runai-creds" \
+  --set nvidia.existingSecret="nvidia-key"
+```
+
+### Option 2 — Inline credentials (quick start / development)
+
+```bash
+helm upgrade -i runai-agent runai-agent/runai-agent \
   --namespace runai-agent --create-namespace \
   --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
   --set mcp-server-runai.runai.credentials.clientId="<client-id>" \
@@ -45,40 +81,18 @@ helm upgrade -i runai-agent \
   --set nvidia.apiKey="<nvidia-api-key>"
 ```
 
-### Install with existing Secrets (recommended for production)
+### Option 3 — Values file
 
 ```bash
-# 1. Create namespace
-kubectl create namespace runai-agent
-
-# 2. Create Run:AI credentials secret
-#    Used by both the MCP server (subchart) and the agent's monitoring functions.
-#    Secret keys must be: clientId, clientSecret  (for the subchart)
-#                         RUNAI_CLIENT_ID, RUNAI_CLIENT_SECRET, RUNAI_BASE_URL  (for the agent)
-kubectl create secret generic runai-creds \
-  --namespace runai-agent \
-  --from-literal=clientId="<client-id>" \
-  --from-literal=clientSecret="<client-secret>" \
-  --from-literal=RUNAI_CLIENT_ID="<client-id>" \
-  --from-literal=RUNAI_CLIENT_SECRET="<client-secret>" \
-  --from-literal=RUNAI_BASE_URL="https://myorg.run.ai"
-
-# 3. Create NVIDIA API key secret
-kubectl create secret generic nvidia-key \
-  --namespace runai-agent \
-  --from-literal=NVIDIA_API_KEY="<nvidia-api-key>"
-
-# 4. Install
-helm upgrade -i runai-agent \
-  oci://ghcr.io/runai-professional-services/charts/runai-agent \
-  --namespace runai-agent \
-  --set mcp-server-runai.runai.baseUrl="https://myorg.run.ai" \
-  --set mcp-server-runai.runai.credentials.existingSecret="runai-creds" \
-  --set runai.existingSecret="runai-creds" \
-  --set nvidia.existingSecret="nvidia-key"
+# Export default values, edit, then install
+helm show values runai-agent/runai-agent > values.yaml
+# Edit values.yaml with your settings
+helm upgrade -i runai-agent runai-agent/runai-agent \
+  --namespace runai-agent --create-namespace \
+  -f values.yaml
 ```
 
-### Install from local chart
+### Install from local chart (for contributors)
 
 ```bash
 # Fetch subchart dependencies first
@@ -98,8 +112,7 @@ If you already have `mcp-server-runai` deployed in your cluster, disable the
 subchart and point the agent at the existing service:
 
 ```bash
-helm upgrade -i runai-agent \
-  oci://ghcr.io/runai-professional-services/charts/runai-agent \
+helm upgrade -i runai-agent runai-agent/runai-agent \
   --namespace runai-agent --create-namespace \
   --set mcp-server-runai.enabled=false \
   --set mcpServer.url="http://mcp-server-runai.runai-mcp.svc.cluster.local:8080" \
@@ -188,8 +201,7 @@ open http://localhost:3000
 ## Upgrading
 
 ```bash
-helm upgrade runai-agent \
-  oci://ghcr.io/runai-professional-services/charts/runai-agent \
+helm upgrade runai-agent runai-agent/runai-agent \
   --namespace runai-agent \
   --reuse-values \
   --version <new-version>

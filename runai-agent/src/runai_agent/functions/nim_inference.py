@@ -24,9 +24,9 @@ from ..utils import call_mcp_tool, _normalize_optional_str_none, logger
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-# Run:AI prefixes the K8s secret name for generic_secret credentials.
-# Credential named "my-ngc-key" → K8s secret "genericsecret-my-ngc-key"
-_GENERIC_SECRET_PREFIX = "genericsecret-"
+# Run:AI prefixes the K8s secret name for ngcApiKey credentials.
+# Credential named "my-ngc-key" → K8s secret "genericsecret-ngcgs-my-ngc-key"
+_GENERIC_SECRET_PREFIX = "genericsecret-ngcgs-"
 
 # ── Default NIM environment variables ─────────────────────────────────────────
 
@@ -87,7 +87,7 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
             image: NIM container image (e.g. 'nvcr.io/nim/meta/llama-3.1-8b-instruct:latest').
             ngc_credential_name: Name of the Run:AI credential asset created via
                 create_ngc_api_key_credential (e.g. 'my-ngc-key'). The K8s secret
-                name is automatically derived as 'genericsecret-<ngc_credential_name>'.
+                name is automatically derived as 'genericsecret-ngcgs-<ngc_credential_name>'.
                 Use this OR ngc_api_key_secret, not both.
             ngc_api_key_secret: Name of the Kubernetes Secret holding the NGC API key.
                 Use this when referencing a raw K8s secret directly instead of a

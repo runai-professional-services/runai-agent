@@ -18,7 +18,8 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [📁 Project Structure](#-project-structure)
 - [🤖 What Can the Agent Do?](#-what-can-the-agent-do)
 - [🚀 Submitting Jobs with the Agent](#-submitting-jobs-with-the-agent)
-  - [🤖 NVIDIA NIM Inference Deployment](#example-4-nvidia-nim-inference-endpoint)
+  - [🔑 NGC Credential Management](#example-4-ngc-credential-management)
+  - [🤖 NVIDIA NIM Inference Deployment](#example-5-nvidia-nim-inference-endpoint)
 - [🔄 Job Lifecycle Management](#-job-lifecycle-management)
 - [🔔 Proactive Monitoring & Auto-Troubleshooting](#-proactive-monitoring--auto-troubleshooting)
 - [🔬 Advanced Failure Analysis](#-advanced-failure-analysis)
@@ -38,7 +39,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 
 - 🤖 **Intelligent Agent** - Powered by `nvidia/nemotron-3-nano-30b-a3b` via NVIDIA NIM with ReAct reasoning
 - 💬 **Web UI** - Beautiful, responsive chat interface with real-time streaming
-- 🔧 **Run:AI Integration via MCP Server** - All platform operations (projects, workloads, node pools, departments, users, access rules, datasources) via `mcp-server-runai`
+- 🔧 **Run:AI Integration via MCP Server** - All platform operations (projects, workloads, node pools, departments, users, access rules, datasources, credentials) via `mcp-server-runai`
 - 🚀 **Job Submission** - Submit training, inference, and workspace workloads directly from natural language
 - 🔄 **Unified Lifecycle Management** - Suspend, resume, and delete any workload type
 - 🔔 **Proactive Monitoring** - Continuously monitor jobs and auto-troubleshoot failures with optional Slack alerts
@@ -46,7 +47,8 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - 📊 **Job Performance Analytics** - Execution time trends, failure rates by project/image, recommendations, anomaly detection
 - 📊 **Cluster Resource Summary** - GPU quota and utilization per project, cluster totals
 - 🩺 **Deep Troubleshooting** - Pod logs, events, and AI-powered diagnosis via kubectl
-- 🤖 **NIM Inference Deployment** - Deploy NVIDIA NIM inference endpoints with correct defaults — NGC API key, port 8000, and NIM env vars auto-configured
+- 🔑 **NGC Credential Management** - Create, list, and delete Run:AI NGC API key credentials — automatically synced as Kubernetes Secrets into project namespaces
+- 🤖 **NIM Inference Deployment** - Deploy NVIDIA NIM inference endpoints with correct defaults — NGC API key wired from a Run:AI credential, port 8000, and NIM env vars auto-configured
 - 🚀 **NIM LLM Benchmarking** - Run GPU benchmarks on H100, H200, A100 using NIM inference
 - 📚 **Documentation Search** - Ask questions about Run:AI features and get answers from official docs
 - 🧠 **Code Generation** - Generate Python job submission code from real GitHub examples
@@ -387,7 +389,8 @@ spec:
 - **Submit training jobs** — single-node, distributed (PyTorch, TensorFlow, MPI)
 - **Submit interactive workspaces** — Jupyter, VSCode, custom environments
 - **Submit inference workloads** — model serving with autoscaling
-- **Deploy NIM inference endpoints** — NVIDIA NIM models with NGC API key, env vars, and port auto-configured
+- **Deploy NIM inference endpoints** — NVIDIA NIM models with NGC API key wired from a credential, env vars, and port auto-configured
+- **NGC credential management** — create, list, and delete Run:AI credential assets (NGC API keys automatically synced as K8s Secrets)
 - **Workload lifecycle** — suspend, resume, delete any workload type
 - **Cluster resource summary** — GPU quota and utilization per project and node pool
 - **Department management** — create/list/delete departments with GPU resource allocation
@@ -400,7 +403,7 @@ spec:
 - **Proactive monitoring** — continuously detect failures and auto-troubleshoot
 - **Advanced failure analysis** — pattern recognition, remediation suggestions, knowledge graph
 - **Job performance analytics** — execution trends, failure rates, anomaly detection
-- **NIM inference deployment** — deploy NIM endpoints with correct defaults (port 8000, env vars, NGC API key from K8s Secret)
+- **NIM inference deployment** — deploy NIM endpoints with correct defaults (port 8000, env vars, NGC API key wired from a Run:AI credential asset)
 - **NIM benchmarking** — run GPU inference benchmarks (H100, H200, A100)
 - **Documentation search** — answers from official Run:AI docs
 - **Code generation** — Python job submission code using real GitHub examples
@@ -435,10 +438,17 @@ spec:
 "Submit a VSCode workspace named 'my-workspace' with 0.5 GPU"
 ```
 
+**NGC Credential Management:**
+```
+"Create an NGC API key credential called my-ngc-key"
+"List credentials"
+"Delete credential my-ngc-key"
+```
+
 **NIM Inference Deployment:**
 ```
-"Deploy a NIM inference called llama-8b in project-01 using image nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-api-key-secret"
-"Start a NIM embedding model nim-embed in project-01 using image nvcr.io/nim/nvidia/llama-nemotron-embed-300m-v2 with NGC API key from secret ngc-creds"
+"Deploy a NIM inference called llama-8b in project-01 using image nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC credential my-ngc-key"
+"Start a NIM embedding model nim-embed in project-01 using image nvcr.io/nim/nvidia/llama-nemotron-embed-300m-v2 with NGC credential my-ngc-key"
 ```
 
 **Code Generation:**
@@ -529,13 +539,36 @@ GPU: 1
 Status: Creating
 ```
 
-#### Example 4: NVIDIA NIM Inference Endpoint
+#### Example 4: NGC Credential Management
 
-Deploy a NIM model with a single natural language prompt. The agent automatically configures port 8000, NIM environment variables, and wires your NGC API key from a Kubernetes Secret — no manual spec required.
+Before deploying a NIM model, create an NGC API key credential. The agent stores it as a Run:AI credential asset and automatically syncs it as a Kubernetes Secret into every project namespace — no `kubectl` required.
+
+```
+Create an NGC API key credential called my-ngc-key with key nvapi-...
+```
+
+**Agent Response:**
+```
+✅ NGC credential created!
+
+- Credential name: my-ngc-key
+- K8s secret name: genericsecret-ngcgs-my-ngc-key
+- Scope: cluster (visible to all projects)
+```
+
+**List and delete credentials:**
+```
+List credentials
+Delete credential my-ngc-key
+```
+
+#### Example 5: NVIDIA NIM Inference Endpoint
+
+Deploy a NIM model with a single natural language prompt. Reference the Run:AI credential by name — the agent resolves the Kubernetes secret automatically and configures port 8000 and NIM environment variables.
 
 ```
 Deploy a NIM inference called llama-8b in project-01 using image
-nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-api-key-secret
+nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC credential my-ngc-key
 ```
 
 **Agent Response:**
@@ -552,7 +585,8 @@ nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-a
 | Replicas      | 1–1                                                |
 | Workload ID   | e1eca348-b33b-4c9a-925b-100b42e7cab1               |
 
-🔑 Credentials: NGC API key sourced from secret `ngc-api-key-secret` (key: `NGC_API_KEY`)
+🔑 Credentials: NGC API key sourced from Run:AI credential `my-ngc-key`
+   → K8s secret: `genericsecret-ngcgs-my-ngc-key` (key: `NGC_API_KEY`)
 
 🌐 Internal URL: http://llama-8b.runai-project-01.svc.cluster.local
 
@@ -563,15 +597,7 @@ nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-a
 - OUTLINES_CACHE_DIR=/tmp/outlines
 ```
 
-**Before submitting**, create the NGC API key secret in the project namespace:
-
-```bash
-kubectl create secret generic ngc-api-key-secret \
-  --namespace runai-project-01 \
-  --from-literal=NGC_API_KEY="<your-ngc-api-key>"
-```
-
-> **Note:** The secret must exist in the Run:AI project namespace (`runai-<project-name>`) before submitting the NIM workload.
+> **Note:** If you haven't created a Run:AI credential yet, the agent will offer to create one before submitting.
 
 ---
 

@@ -183,12 +183,14 @@ workflow:
     "job performance analytics", "execution trends", "how long do jobs take", "failure rates", "jobs taking too long", "anomaly"
     → Call runai_job_analytics. Use defaults (last 7 days, all projects) if not specified — do NOT ask.
 
-    **🔑 NGC CREDENTIALS → mcp_runai (create_ngc_api_key_credential / list_credentials):**
+    **🔑 NGC CREDENTIALS → mcp_runai (create_ngc_api_key_credential / delete_credential) / runai_list_resources (list):**
     "create NGC API key", "add NGC credential", "store NGC key", "create NIM credential", "list credentials", "what credentials exist", "what secrets do I have"
-    → To CREATE: call create_ngc_api_key_credential with name, ngc_api_key, and optionally project_name.
-      Returns credential_name and k8s_secret_name — share both with the user.
-    → To LIST: call list_credentials (optionally filtered by project_name).
-      Returns each credential's name, kind, and k8s_secret_name.
+    → To CREATE: call create_ngc_api_key_credential immediately with name and ngc_api_key.
+      NEVER pass project_name unless the user's message explicitly contains "in project X" or "for project X".
+      Default is cluster scope — do NOT infer a project from context or previously listed projects.
+      Returns credential_name and k8s_secret_name — share both.
+    → To LIST: call runai_list_resources with resource_type="credentials" (optionally pass project= to filter).
+    → To DELETE: call delete_credential immediately with credential_name. No confirmation needed.
 
     **🤖 NIM INFERENCE DEPLOYMENT → runai_nim_inference:**
     "deploy NIM", "run NIM", "start NIM", "NIM model", "NIM endpoint", "NIM inference", "serve NIM", "deploy inference endpoint"
@@ -216,6 +218,7 @@ workflow:
     - "list roles" / "what roles are available" → resource_type="roles"
     - "list PVCs" / "list datasources" → resource_type="pvcs"
     - "list S3/NFS/Git assets" → resource_type="s3"/"nfs"/"git"
+    - "list credentials" / "show credentials" / "what credentials exist" → resource_type="credentials"
     - "list access rules" → resource_type="access_rules"
 
     **🚀 WORKLOAD SUBMISSION — submit immediately, no confirmation:**
@@ -227,10 +230,12 @@ workflow:
     If submit fails because a workload with that name already exists, say: "A workload named '[name]' already exists in project '[project]'. Would you like me to delete it and resubmit, or use a different name?" — do NOT retry automatically.
 
     **🗑️ DELETION — delete immediately, no confirmation:**
-    When the user asks to delete a workload, call the appropriate delete_* tool directly without asking for confirmation.
+    When the user asks to delete a workload or credential, call the appropriate delete_* tool directly without asking for confirmation.
 
     **Workload Lifecycle:** Pass workload_name + project_name directly — no UUID lookup needed.
     - suspend_training / resume_training / delete_training / delete_workspace / delete_inference
+
+    **Credential Deletion:** Call delete_credential with credential_name directly — no UUID lookup needed.
 
     **🎯 PROJECT & DEPARTMENT:**
     - create_project: use name + gpu_deserved. Cluster/node pool are auto-discovered. After success, confirm in one message and STOP — do NOT call runai_list_resources afterward.

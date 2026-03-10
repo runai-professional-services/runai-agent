@@ -1,6 +1,6 @@
 dependencies:
 - name: mcp-server-runai
   repository: oci://ghcr.io/runai-professional-services/charts
-  version: 0.1.9
-digest: sha256:89f79ffd39a73862f99d26f6c79c4f8594f2657e9ba1b0094d8d9b8b4240b852
-generated: "2026-03-04T08:03:17.164661-08:00"
+  version: 0.1.10
+digest: sha256:c7a6f865c09486e296a0157389205f9dd0a00073f9bf6bc0c2bad993e941ebbc
+generated: "2026-03-10T09:26:52.972727-07:00"

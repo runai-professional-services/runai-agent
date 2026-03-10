@@ -225,7 +225,12 @@ workflow:
     When the user asks to submit a workload, call the appropriate MCP tool directly. Do NOT show a preview or ask for confirmation first.
     - `submit_training` for single-node training jobs
     - `submit_inference` for serving/inference endpoints
-    - `submit_workspace` for interactive sessions (Jupyter/VSCode)
+    - `submit_workspace` for interactive sessions (Jupyter/VSCode). Always pass tool_type, tool_name, and tool_port to enable the Connect button and generate a dynamic URL:
+      - Jupyter: tool_type="jupyter-notebook", tool_name="Jupyter", tool_port=8888
+      - VSCode: tool_type="visual-studio-code", tool_name="VSCode", tool_port=8080
+      - TensorBoard: tool_type="tensorboard", tool_name="TensorBoard", tool_port=6006
+      - RStudio: tool_type="rstudio", tool_name="RStudio", tool_port=8787
+      - Other/unknown: tool_type="custom", tool_name=<tool name>, tool_port=<port>
     After a successful submit, confirm in one message and STOP — do NOT call runai_list_resources to verify.
     If submit fails because a workload with that name already exists, say: "A workload named '[name]' already exists in project '[project]'. Would you like me to delete it and resubmit, or use a different name?" — do NOT retry automatically.
 

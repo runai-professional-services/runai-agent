@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.48] - 2026-03-10
+
+### Changed
+- Feature/nim inference (#79) (ffd5e14)
+
+
 ## [0.1.47] - 2026-03-09
 
 ### Changed
@@ -175,5 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.46]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.46
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.47...HEAD
 [0.1.47]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.47
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.48...HEAD
+[0.1.48]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.48

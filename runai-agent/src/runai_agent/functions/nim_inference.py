@@ -22,6 +22,12 @@ from nat.data_models.function import FunctionBaseConfig
 from ..utils import call_mcp_tool, _normalize_optional_str_none, logger
 
 
+# ── Constants ────────────────────────────────────────────────────────────────
+
+# Run:AI prefixes the K8s secret name for generic_secret credentials.
+# Credential named "my-ngc-key" → K8s secret "genericsecret-my-ngc-key"
+_GENERIC_SECRET_PREFIX = "genericsecret-"
+
 # ── Default NIM environment variables ─────────────────────────────────────────
 
 NIM_DEFAULT_ENV_VARS = {
@@ -60,6 +66,7 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
         name: str,
         project_name: str,
         image: str,
+        ngc_credential_name: Optional[str] = None,
         ngc_api_key_secret: Optional[str] = None,
         ngc_api_key_secret_key: str = "NGC_API_KEY",
         serving_port: Optional[int] = None,
@@ -78,9 +85,13 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
             name: Workload name (e.g. 'llama-31-8b').
             project_name: Run:AI project to deploy into.
             image: NIM container image (e.g. 'nvcr.io/nim/meta/llama-3.1-8b-instruct:latest').
+            ngc_credential_name: Name of the Run:AI credential asset created via
+                create_ngc_api_key_credential (e.g. 'my-ngc-key'). The K8s secret
+                name is automatically derived as 'genericsecret-<ngc_credential_name>'.
+                Use this OR ngc_api_key_secret, not both.
             ngc_api_key_secret: Name of the Kubernetes Secret holding the NGC API key.
-                Required for NIM models that pull weights from NGC.
-                The secret must exist in the same namespace as the project.
+                Use this when referencing a raw K8s secret directly instead of a
+                Run:AI credential. The secret must exist in the project namespace.
             ngc_api_key_secret_key: Key within the secret that holds NGC_API_KEY (default: 'NGC_API_KEY').
             serving_port: Port NIM listens on (default: 8000).
             gpu_devices: Number of GPUs (default: 1).
@@ -96,8 +107,17 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
         """
         try:
             # Normalise optional strings the LLM may pass as "null"
+            ngc_credential_name = _normalize_optional_str_none(ngc_credential_name)
             ngc_api_key_secret = _normalize_optional_str_none(ngc_api_key_secret)
             extra_env_vars = extra_env_vars or {}
+
+            # Derive K8s secret name from Run:AI credential name if provided
+            if ngc_credential_name and not ngc_api_key_secret:
+                ngc_api_key_secret = f"{_GENERIC_SECRET_PREFIX}{ngc_credential_name}"
+                logger.info(
+                    "Derived K8s secret name '%s' from credential name '%s'",
+                    ngc_api_key_secret, ngc_credential_name,
+                )
 
             effective_port = serving_port or config.default_serving_port
             effective_gpus = gpu_devices or config.default_gpu_devices

@@ -183,10 +183,19 @@ workflow:
     "job performance analytics", "execution trends", "how long do jobs take", "failure rates", "jobs taking too long", "anomaly"
     → Call runai_job_analytics. Use defaults (last 7 days, all projects) if not specified — do NOT ask.
 
+    **🔑 NGC CREDENTIALS → mcp_runai (create_ngc_api_key_credential / list_credentials):**
+    "create NGC API key", "add NGC credential", "store NGC key", "create NIM credential", "list credentials", "what credentials exist", "what secrets do I have"
+    → To CREATE: call create_ngc_api_key_credential with name, ngc_api_key, and optionally project_name.
+      Returns credential_name and k8s_secret_name — share both with the user.
+    → To LIST: call list_credentials (optionally filtered by project_name).
+      Returns each credential's name, kind, and k8s_secret_name.
+
     **🤖 NIM INFERENCE DEPLOYMENT → runai_nim_inference:**
     "deploy NIM", "run NIM", "start NIM", "NIM model", "NIM endpoint", "NIM inference", "serve NIM", "deploy inference endpoint"
-    → Call runai_nim_inference with name, project_name, image, and ngc_api_key_secret.
-    → Always ask for ngc_api_key_secret (K8s secret name holding NGC_API_KEY) if not provided — NIM models require it.
+    → Call runai_nim_inference with name, project_name, image, and EITHER:
+      - ngc_credential_name: the Run:AI credential asset name (preferred — K8s secret auto-derived)
+      - ngc_api_key_secret: a raw K8s secret name (advanced)
+    → If the user hasn't created a credential yet, offer to create one first via create_ngc_api_key_credential.
     → Port defaults to 8000, NIM env vars (NIM_SERVER_PORT, NIM_JSONL_LOGGING, NIM_LOG_LEVEL) are set automatically.
     → Submit immediately — no confirmation required.
 

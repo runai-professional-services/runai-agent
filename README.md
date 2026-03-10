@@ -18,6 +18,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [📁 Project Structure](#-project-structure)
 - [🤖 What Can the Agent Do?](#-what-can-the-agent-do)
 - [🚀 Submitting Jobs with the Agent](#-submitting-jobs-with-the-agent)
+  - [🤖 NVIDIA NIM Inference Deployment](#example-4-nvidia-nim-inference-endpoint)
 - [🔄 Job Lifecycle Management](#-job-lifecycle-management)
 - [🔔 Proactive Monitoring & Auto-Troubleshooting](#-proactive-monitoring--auto-troubleshooting)
 - [🔬 Advanced Failure Analysis](#-advanced-failure-analysis)
@@ -45,6 +46,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - 📊 **Job Performance Analytics** - Execution time trends, failure rates by project/image, recommendations, anomaly detection
 - 📊 **Cluster Resource Summary** - GPU quota and utilization per project, cluster totals
 - 🩺 **Deep Troubleshooting** - Pod logs, events, and AI-powered diagnosis via kubectl
+- 🤖 **NIM Inference Deployment** - Deploy NVIDIA NIM inference endpoints with correct defaults — NGC API key, port 8000, and NIM env vars auto-configured
 - 🚀 **NIM LLM Benchmarking** - Run GPU benchmarks on H100, H200, A100 using NIM inference
 - 📚 **Documentation Search** - Ask questions about Run:AI features and get answers from official docs
 - 🧠 **Code Generation** - Generate Python job submission code from real GitHub examples
@@ -336,6 +338,7 @@ spec:
 │           │   ├── kubectl_troubleshoot.py # Deep kubectl diagnostics
 │           │   ├── list_resources.py      # Wrapper for all MCP list operations
 │           │   ├── nim_benchmark.py       # NIM LLM GPU benchmarking
+│           │   ├── nim_inference.py       # NIM inference deployment with correct defaults
 │           │   ├── proactive_monitor.py   # Proactive monitoring & auto-troubleshoot
 │           │   └── runai_docs_helper.py   # Direct links to Run:AI documentation
 │           ├── middleware/            # Request middleware
@@ -384,6 +387,7 @@ spec:
 - **Submit training jobs** — single-node, distributed (PyTorch, TensorFlow, MPI)
 - **Submit interactive workspaces** — Jupyter, VSCode, custom environments
 - **Submit inference workloads** — model serving with autoscaling
+- **Deploy NIM inference endpoints** — NVIDIA NIM models with NGC API key, env vars, and port auto-configured
 - **Workload lifecycle** — suspend, resume, delete any workload type
 - **Cluster resource summary** — GPU quota and utilization per project and node pool
 - **Department management** — create/list/delete departments with GPU resource allocation
@@ -396,6 +400,7 @@ spec:
 - **Proactive monitoring** — continuously detect failures and auto-troubleshoot
 - **Advanced failure analysis** — pattern recognition, remediation suggestions, knowledge graph
 - **Job performance analytics** — execution trends, failure rates, anomaly detection
+- **NIM inference deployment** — deploy NIM endpoints with correct defaults (port 8000, env vars, NGC API key from K8s Secret)
 - **NIM benchmarking** — run GPU inference benchmarks (H100, H200, A100)
 - **Documentation search** — answers from official Run:AI docs
 - **Code generation** — Python job submission code using real GitHub examples
@@ -428,6 +433,12 @@ spec:
 ```
 "Create a Jupyter workspace with 1 GPU in project-01"
 "Submit a VSCode workspace named 'my-workspace' with 0.5 GPU"
+```
+
+**NIM Inference Deployment:**
+```
+"Deploy a NIM inference called llama-8b in project-01 using image nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-api-key-secret"
+"Start a NIM embedding model nim-embed in project-01 using image nvcr.io/nim/nvidia/llama-nemotron-embed-300m-v2 with NGC API key from secret ngc-creds"
 ```
 
 **Code Generation:**
@@ -517,6 +528,50 @@ Image: jupyter/scipy-notebook
 GPU: 1
 Status: Creating
 ```
+
+#### Example 4: NVIDIA NIM Inference Endpoint
+
+Deploy a NIM model with a single natural language prompt. The agent automatically configures port 8000, NIM environment variables, and wires your NGC API key from a Kubernetes Secret — no manual spec required.
+
+```
+Deploy a NIM inference called llama-8b in project-01 using image
+nvcr.io/nim/meta/llama-3.1-8b-instruct:latest with NGC API key from secret ngc-api-key-secret
+```
+
+**Agent Response:**
+```
+✅ NIM Inference Submitted
+
+| Parameter     | Value                                              |
+|---------------|----------------------------------------------------|
+| Workload      | llama-8b                                           |
+| Project       | project-01                                         |
+| Image         | nvcr.io/nim/meta/llama-3.1-8b-instruct:latest      |
+| Serving Port  | 8000                                               |
+| GPUs          | 1 × 1.0                                            |
+| Replicas      | 1–1                                                |
+| Workload ID   | e1eca348-b33b-4c9a-925b-100b42e7cab1               |
+
+🔑 Credentials: NGC API key sourced from secret `ngc-api-key-secret` (key: `NGC_API_KEY`)
+
+🌐 Internal URL: http://llama-8b.runai-project-01.svc.cluster.local
+
+📋 NIM Environment Variables Set:
+- NIM_SERVER_PORT=8000
+- NIM_JSONL_LOGGING=1
+- NIM_LOG_LEVEL=INFO
+- OUTLINES_CACHE_DIR=/tmp/outlines
+```
+
+**Before submitting**, create the NGC API key secret in the project namespace:
+
+```bash
+kubectl create secret generic ngc-api-key-secret \
+  --namespace runai-project-01 \
+  --from-literal=NGC_API_KEY="<your-ngc-api-key>"
+```
+
+> **Note:** The secret must exist in the Run:AI project namespace (`runai-<project-name>`) before submitting the NIM workload.
 
 ---
 

@@ -17,10 +17,11 @@ class RunaiListResourcesConfig(FunctionBaseConfig, name="runai_list_resources"):
         "Use this for: 'list projects', 'show all projects', 'list departments', "
         "'list training jobs', 'show running jobs', 'list workspaces', "
         "'list inferences', 'show node pools', 'list users', 'list roles', "
-        "'list PVCs', 'list datasources', 'list access rules'. "
+        "'list PVCs', 'list datasources', 'list access rules', "
+        "'list credentials', 'show credentials', 'what credentials exist'. "
         "Pass resource_type as one of: projects, departments, trainings, workspaces, "
-        "inferences, node_pools, users, roles, pvcs, s3, nfs, git, access_rules. "
-        "Optionally pass project to filter workloads/datasources by project."
+        "inferences, node_pools, users, roles, pvcs, s3, nfs, git, access_rules, credentials. "
+        "Optionally pass project to filter workloads/datasources/credentials by project."
     )
 
 
@@ -182,6 +183,21 @@ def _format_datasources(data: dict, kind: str) -> str:
     return "\n".join(lines)
 
 
+def _format_credentials(data: dict) -> str:
+    creds = _unwrap(data, "credentials")
+    if not creds:
+        return "No credentials found."
+    lines = [f"Found {len(creds)} credential(s):"]
+    for c in creds:
+        name = c.get("name", "unknown")
+        kind = c.get("kind", c.get("type", ""))
+        scope = c.get("scope", "")
+        k8s_secret = c.get("k8s_secret_name", c.get("secretName", ""))
+        k8s_str = f", K8s secret: `{k8s_secret}`" if k8s_secret else ""
+        lines.append(f"- **{name}**: {kind}, scope: {scope}{k8s_str}")
+    return "\n".join(lines)
+
+
 def _format_access_rules(data: dict) -> str:
     rules = _unwrap(data, "accessRules")
     if not rules:
@@ -217,6 +233,7 @@ _TOOL_MAP = {
     "nfs": "list_nfs_assets",
     "git": "list_git_assets",
     "access_rules": "list_access_rules",
+    "credentials": "list_credentials",
 }
 
 
@@ -244,6 +261,8 @@ async def runai_list_resources(config: RunaiListResourcesConfig, builder: Builde
         args = {}
         if project and resource_type in ("trainings", "workspaces", "inferences", "pvcs", "s3", "nfs", "git"):
             args["projectName"] = project
+        if project and resource_type == "credentials":
+            args["project_name"] = project
 
         try:
             logger.info(f"Listing {resource_type} via MCP tool '{tool_name}' args={args}")
@@ -268,6 +287,8 @@ async def runai_list_resources(config: RunaiListResourcesConfig, builder: Builde
             return _format_datasources(data, resource_type)
         elif resource_type == "access_rules":
             return _format_access_rules(data)
+        elif resource_type == "credentials":
+            return _format_credentials(data)
         else:
             return str(data)
 

@@ -2,8 +2,36 @@ apiVersion: v1
 entries:
   runai-agent:
   - apiVersion: v2
+    appVersion: 0.1.49
+    created: "2026-03-11T19:04:57.082795478Z"
+    dependencies:
+    - condition: mcp-server-runai.enabled
+      name: mcp-server-runai
+      repository: oci://ghcr.io/runai-professional-services/charts
+      version: ~0.1.0
+    description: Intelligent conversational agent for Run:AI cluster management with
+      advanced failure analysis
+    digest: 603ec00f0d33b4a5355b777d3b76d2b2b4ed7eba3471dc489c0a40feab303f03
+    home: https://github.com/runai-professional-services/runai-agent
+    keywords:
+    - runai
+    - ai
+    - machine-learning
+    - nvidia
+    - kubernetes
+    maintainers:
+    - name: Brad Soper
+    - name: Vivek Kolasani
+    name: runai-agent
+    sources:
+    - https://github.com/runai-professional-services/runai-agent
+    type: application
+    urls:
+    - https://runai-professional-services.github.io/runai-agent/runai-agent-0.1.49.tgz
+    version: 0.1.49
+  - apiVersion: v2
     appVersion: 0.1.48
-    created: "2026-03-10T18:34:06.427055098Z"
+    created: "2026-03-11T19:04:57.081778288Z"
     dependencies:
     - condition: mcp-server-runai.enabled
       name: mcp-server-runai
@@ -31,7 +59,7 @@ entries:
     version: 0.1.48
   - apiVersion: v2
     appVersion: 0.1.47
-    created: "2026-03-10T18:34:06.42525955Z"
+    created: "2026-03-11T19:04:57.080657664Z"
     dependencies:
     - condition: mcp-server-runai.enabled
       name: mcp-server-runai
@@ -59,7 +87,7 @@ entries:
     version: 0.1.47
   - apiVersion: v2
     appVersion: 0.1.46
-    created: "2026-03-10T18:34:06.424265558Z"
+    created: "2026-03-11T19:04:57.078918984Z"
     dependencies:
     - condition: mcp-server-runai.enabled
       name: mcp-server-runai
@@ -87,7 +115,7 @@ entries:
     version: 0.1.46
   - apiVersion: v2
     appVersion: 0.1.45
-    created: "2026-03-10T18:34:06.423209319Z"
+    created: "2026-03-11T19:04:57.077841351Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 7520afc6ef0db81712caa75ea544962795e76d1f7e9084972b805d0781e45d44
@@ -110,7 +138,7 @@ entries:
     version: 0.1.45
   - apiVersion: v2
     appVersion: 0.1.44
-    created: "2026-03-10T18:34:06.42264456Z"
+    created: "2026-03-11T19:04:57.077333382Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 19957c4c38d9062f2e5974af40b116262c968428d8cfac07104525cca66c83c8
@@ -133,7 +161,7 @@ entries:
     version: 0.1.44
   - apiVersion: v2
     appVersion: 0.1.43
-    created: "2026-03-10T18:34:06.422141036Z"
+    created: "2026-03-11T19:04:57.076812088Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 8d7c448fc7bd92668c11af14a6c6a7ed03edde6bb4a51cefb630ca4287e49c77
@@ -156,7 +184,7 @@ entries:
     version: 0.1.43
   - apiVersion: v2
     appVersion: 0.1.42
-    created: "2026-03-10T18:34:06.42160927Z"
+    created: "2026-03-11T19:04:57.076284412Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: c8eb4dd9e2afa37185374fbefa2be7859f9bb7986eae7ebf4be490b07785369b
@@ -179,7 +207,7 @@ entries:
     version: 0.1.42
   - apiVersion: v2
     appVersion: 0.1.41
-    created: "2026-03-10T18:34:06.421103051Z"
+    created: "2026-03-11T19:04:57.075721991Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: b9400a943ef5c5c7b4ceef9901c9221041efea96c5c4bf3225280aac39917b88
@@ -202,7 +230,7 @@ entries:
     version: 0.1.41
   - apiVersion: v2
     appVersion: 0.1.40
-    created: "2026-03-10T18:34:06.420551938Z"
+    created: "2026-03-11T19:04:57.075214803Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: 790520d71020de5deefec9bd34fb33267adb9598069faae6fd9ba6d6908d1a71
@@ -225,7 +253,7 @@ entries:
     version: 0.1.40
   - apiVersion: v2
     appVersion: 0.1.39
-    created: "2026-03-10T18:34:06.420022556Z"
+    created: "2026-03-11T19:04:57.074664856Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: d281dd22fe4e0bd8b883132725f192f7de8e33fa3dbbb2e0d7dc543d0f2c0d45
@@ -248,7 +276,7 @@ entries:
     version: 0.1.39
   - apiVersion: v2
     appVersion: 0.1.37
-    created: "2026-03-10T18:34:06.419453087Z"
+    created: "2026-03-11T19:04:57.074037153Z"
     description: Intelligent conversational agent for Run:AI cluster management with
       advanced failure analysis
     digest: f26ddcde7e50aa4bfa1fd06f155b4472e65eff99709b91225aab09781666dda1
@@ -269,4 +297,4 @@ entries:
     urls:
     - https://runai-professional-services.github.io/runai-agent/runai-agent-0.1.37.tgz
     version: 0.1.37
-generated: "2026-03-10T18:34:06.418686106Z"
+generated: "2026-03-11T19:04:57.072610017Z"

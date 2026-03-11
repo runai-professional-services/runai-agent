@@ -220,6 +220,7 @@ workflow:
     - "list workspaces" → resource_type="workspaces"
     - "list inferences" → resource_type="inferences"
     - "list node pools" → resource_type="node_pools"
+    - "show details of X node pool" / "get node pool X" / "details of default node pool" → call get_node_pool(node_pool_name="X") via mcp_runai directly (NOT runai_list_resources)
     - "list users" → resource_type="users"
     - "list roles" / "what roles are available" → resource_type="roles"
     - "list PVCs" / "list datasources" → resource_type="pvcs"

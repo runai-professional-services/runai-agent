@@ -56,6 +56,7 @@ _TOOL_PRESETS = {
 
 # ── NAT Config ────────────────────────────────────────────────────────────────
 
+
 class RunaiWorkspaceConfig(FunctionBaseConfig, name="runai_workspace"):
     """Submit interactive workspace workloads on Run:AI with correct defaults."""
 
@@ -70,6 +71,7 @@ class RunaiWorkspaceConfig(FunctionBaseConfig, name="runai_workspace"):
 
 
 # ── NAT Function Registration ─────────────────────────────────────────────────
+
 
 @register_function(config_type=RunaiWorkspaceConfig)
 async def runai_workspace(config: RunaiWorkspaceConfig, builder: Builder):
@@ -106,7 +108,9 @@ async def runai_workspace(config: RunaiWorkspaceConfig, builder: Builder):
             tool_key = (_normalize_optional_str_none(tool) or "jupyter").lower()
             preset = _TOOL_PRESETS.get(tool_key, {})
 
-            effective_gpus = gpu_devices if gpu_devices is not None else config.default_gpu_devices
+            effective_gpus = (
+                gpu_devices if gpu_devices is not None else config.default_gpu_devices
+            )
             effective_cpu = cpu_core_request or config.default_cpu_cores
             effective_mem = cpu_memory_request or config.default_cpu_memory
 
@@ -137,7 +141,11 @@ async def runai_workspace(config: RunaiWorkspaceConfig, builder: Builder):
 
             logger.info(
                 "Submitting workspace: name=%s project=%s image=%s tool=%s gpus=%d",
-                name, project_name, image, tool_key, effective_gpus,
+                name,
+                project_name,
+                image,
+                tool_key,
+                effective_gpus,
             )
 
             result = await call_mcp_tool(mcp_url, "submit_workspace", payload)

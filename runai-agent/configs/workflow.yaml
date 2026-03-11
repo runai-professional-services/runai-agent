@@ -221,6 +221,7 @@ workflow:
     - "list inferences" → resource_type="inferences"
     - "list node pools" → resource_type="node_pools"
     - "show details of X node pool" / "get node pool X" / "details of default node pool" → call get_node_pool(node_pool_name="X") via mcp_runai directly (NOT runai_list_resources)
+    - "GPU metrics/utilization for X node pool" / "node pool metrics" → call get_node_pool(node_pool_name="X") first to obtain cluster_id, then call get_node_pool_metrics(cluster_id=<from above>, node_pool_name="X", start=<ISO8601>, end=<ISO8601>). Default window: last 1 hour. Compute start/end from current time in UTC ISO 8601 format (e.g. "2025-01-01T00:00:00Z").
     - "list users" → resource_type="users"
     - "list roles" / "what roles are available" → resource_type="roles"
     - "list PVCs" / "list datasources" → resource_type="pvcs"

@@ -9,6 +9,7 @@ from .job_analytics import JobAnalyticsConfig, runai_job_analytics
 from .runai_docs_helper import RunaiDocsHelperConfig, runai_docs_helper
 from .nim_benchmark import RunaiNimBenchmarkConfig, runai_nim_benchmark
 from .list_resources import RunaiListResourcesConfig, runai_list_resources
+from .workspace import RunaiWorkspaceConfig, runai_workspace
 
 __all__ = [
     'RunailabsEnvironmentConfig',
@@ -29,4 +30,6 @@ __all__ = [
     'runai_nim_benchmark',
     'RunaiListResourcesConfig',
     'runai_list_resources',
+    'RunaiWorkspaceConfig',
+    'runai_workspace',
 ]

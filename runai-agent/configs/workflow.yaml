@@ -87,6 +87,10 @@ functions:
     _type: runai_list_resources
     description: "List any Run:AI resource with clean formatted output. Use for: list projects, list departments, list training jobs, list workspaces, list inferences, list node pools, list users, list roles, list PVCs/datasources, list access rules."
 
+  runai_workspace:
+    _type: runai_workspace
+    description: "Submit an interactive workspace (Jupyter, VSCode, TensorBoard, RStudio) on Run:AI. Handles command, args, tool_type, and tool_port automatically. Use for any 'create workspace', 'Jupyter', or 'VSCode' requests."
+
   runai_nim_inference:
     _type: runai_nim_inference
     description: "Submit an NVIDIA NIM inference endpoint on Run:AI. Automatically sets NIM defaults (port 8000, NIM_SERVER_PORT, NIM_JSONL_LOGGING, NIM_LOG_LEVEL) and wires NGC_API_KEY from a Kubernetes Secret. Use when the user asks to deploy, start, or serve a NIM model."
@@ -147,6 +151,7 @@ workflow:
   _type: tool_calling_agent
   tool_names:
     - runai_list_resources
+    - runai_workspace  # Interactive workspace submission (Jupyter, VSCode, etc.)
     - runailabs_environment_info
     - runai_kubectl_troubleshoot
     - runai_proactive_monitor
@@ -173,6 +178,7 @@ workflow:
     - runai_nim_benchmark
     - runai_proactive_monitor
     - runai_list_resources
+    - runai_workspace
 
   system_prompt: |
     You are an advanced Run:AI platform specialist with access to real code examples and the Run:AI cluster via MCP tools.
@@ -221,16 +227,16 @@ workflow:
     - "list credentials" / "show credentials" / "what credentials exist" → resource_type="credentials"
     - "list access rules" → resource_type="access_rules"
 
+    **🖥️ WORKSPACE SUBMISSION → runai_workspace (ALWAYS use this, NEVER call submit_workspace directly):**
+    "create workspace", "submit workspace", "Jupyter notebook", "Jupyter workspace", "VSCode workspace", "interactive session"
+    → Call runai_workspace with: name, project_name, image, gpu_devices, and tool ("jupyter", "vscode", "tensorboard", "rstudio").
+      Do NOT call submit_workspace — it lacks the required command/args for URL routing.
+
     **🚀 WORKLOAD SUBMISSION — submit immediately, no confirmation:**
     When the user asks to submit a workload, call the appropriate MCP tool directly. Do NOT show a preview or ask for confirmation first.
     - `submit_training` for single-node training jobs
     - `submit_inference` for serving/inference endpoints
-    - `submit_workspace` for interactive sessions (Jupyter/VSCode). Always pass tool_type, tool_name, and tool_port to enable the Connect button and generate a dynamic URL:
-      - Jupyter: tool_type="jupyter-notebook", tool_name="Jupyter", tool_port=8888
-      - VSCode: tool_type="visual-studio-code", tool_name="VSCode", tool_port=8080
-      - TensorBoard: tool_type="tensorboard", tool_name="TensorBoard", tool_port=6006
-      - RStudio: tool_type="rstudio", tool_name="RStudio", tool_port=8787
-      - Other/unknown: tool_type="custom", tool_name=<tool name>, tool_port=<port>
+    - Workspaces: use `runai_workspace` (see above)
     After a successful submit, confirm in one message and STOP — do NOT call runai_list_resources to verify.
     If submit fails because a workload with that name already exists, say: "A workload named '[name]' already exists in project '[project]'. Would you like me to delete it and resubmit, or use a different name?" — do NOT retry automatically.
 

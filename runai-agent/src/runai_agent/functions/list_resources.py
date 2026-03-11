@@ -69,7 +69,9 @@ def _format_projects(data: dict) -> str:
         in_use = _gpu_in_use(p)
         if in_use is not None and quota > 0:
             pct = int(round(in_use / quota * 100))
-            lines.append(f"- **{name}**: {quota} GPU quota ({in_use} in use, {pct}% utilized)")
+            lines.append(
+                f"- **{name}**: {quota} GPU quota ({in_use} in use, {pct}% utilized)"
+            )
         elif in_use is not None:
             lines.append(f"- **{name}**: {quota} GPU quota ({in_use} in use)")
         else:
@@ -94,7 +96,11 @@ def _format_departments(data: dict) -> str:
 
 
 def _format_workloads(data: dict, kind: str) -> str:
-    key_map = {"trainings": "trainings", "workspaces": "workspaces", "inferences": "inferences"}
+    key_map = {
+        "trainings": "trainings",
+        "workspaces": "workspaces",
+        "inferences": "inferences",
+    }
     key = key_map.get(kind, kind)
     items = _unwrap(data, key)
     if not items:
@@ -259,13 +265,23 @@ async def runai_list_resources(config: RunaiListResourcesConfig, builder: Builde
 
         tool_name = _TOOL_MAP[resource_type]
         args = {}
-        if project and resource_type in ("trainings", "workspaces", "inferences", "pvcs", "s3", "nfs", "git"):
+        if project and resource_type in (
+            "trainings",
+            "workspaces",
+            "inferences",
+            "pvcs",
+            "s3",
+            "nfs",
+            "git",
+        ):
             args["projectName"] = project
         if project and resource_type == "credentials":
             args["project_name"] = project
 
         try:
-            logger.info(f"Listing {resource_type} via MCP tool '{tool_name}' args={args}")
+            logger.info(
+                f"Listing {resource_type} via MCP tool '{tool_name}' args={args}"
+            )
             data = await call_mcp_tool(mcp_url, tool_name, args)
         except Exception as e:
             logger.error(f"MCP call failed for {tool_name}: {e}")

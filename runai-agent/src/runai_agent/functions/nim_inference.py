@@ -40,6 +40,7 @@ NIM_DEFAULT_ENV_VARS = {
 
 # ── NAT Config ────────────────────────────────────────────────────────────────
 
+
 class RunaiNimInferenceConfig(FunctionBaseConfig, name="runai_nim_inference"):
     """Submit NVIDIA NIM inference endpoints on Run:AI with correct defaults."""
 
@@ -57,6 +58,7 @@ class RunaiNimInferenceConfig(FunctionBaseConfig, name="runai_nim_inference"):
 
 
 # ── NAT Function Registration ─────────────────────────────────────────────────
+
 
 @register_function(config_type=RunaiNimInferenceConfig)
 async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder):
@@ -116,7 +118,8 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
                 ngc_api_key_secret = f"{_GENERIC_SECRET_PREFIX}{ngc_credential_name}"
                 logger.info(
                     "Derived K8s secret name '%s' from credential name '%s'",
-                    ngc_api_key_secret, ngc_credential_name,
+                    ngc_api_key_secret,
+                    ngc_credential_name,
                 )
 
             effective_port = serving_port or config.default_serving_port
@@ -137,11 +140,13 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
             # Build secret env var list
             secret_env_vars = []
             if ngc_api_key_secret:
-                secret_env_vars.append({
-                    "name": "NGC_API_KEY",
-                    "secret_name": ngc_api_key_secret,
-                    "secret_key": ngc_api_key_secret_key,
-                })
+                secret_env_vars.append(
+                    {
+                        "name": "NGC_API_KEY",
+                        "secret_name": ngc_api_key_secret,
+                        "secret_key": ngc_api_key_secret_key,
+                    }
+                )
             else:
                 logger.warning(
                     "No NGC API key secret provided for NIM inference '%s'. "
@@ -151,23 +156,31 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
 
             logger.info(
                 "Submitting NIM inference: name=%s project=%s image=%s port=%d gpus=%d",
-                name, project_name, image, effective_port, effective_gpus,
+                name,
+                project_name,
+                image,
+                effective_port,
+                effective_gpus,
             )
 
-            result = await call_mcp_tool(mcp_url, "submit_inference", {
-                "name": name,
-                "project_name": project_name,
-                "image": image,
-                "serving_port": effective_port,
-                "gpu_devices": effective_gpus,
-                "gpu_portion": gpu_portion,
-                "cpu_core_request": effective_cpu,
-                "cpu_memory_request": effective_mem,
-                "min_replicas": min_replicas,
-                "max_replicas": max_replicas,
-                "environment_variables": plain_env_vars,
-                "secret_environment_variables": secret_env_vars,
-            })
+            result = await call_mcp_tool(
+                mcp_url,
+                "submit_inference",
+                {
+                    "name": name,
+                    "project_name": project_name,
+                    "image": image,
+                    "serving_port": effective_port,
+                    "gpu_devices": effective_gpus,
+                    "gpu_portion": gpu_portion,
+                    "cpu_core_request": effective_cpu,
+                    "cpu_memory_request": effective_mem,
+                    "min_replicas": min_replicas,
+                    "max_replicas": max_replicas,
+                    "environment_variables": plain_env_vars,
+                    "secret_environment_variables": secret_env_vars,
+                },
+            )
 
             # Surface any API-level errors
             if isinstance(result, dict) and result.get("error"):
@@ -177,9 +190,7 @@ async def runai_nim_inference(config: RunaiNimInferenceConfig, builder: Builder)
                 )
 
             workload_id = result.get("workloadId") or result.get("id") or "N/A"
-            url = (
-                f"http://{name}.runai-{project_name}.svc.cluster.local"
-            )
+            url = f"http://{name}.runai-{project_name}.svc.cluster.local"
 
             ngc_note = (
                 f"NGC API key sourced from secret `{ngc_api_key_secret}` (key: `{ngc_api_key_secret_key}`)"

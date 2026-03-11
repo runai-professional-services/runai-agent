@@ -33,7 +33,12 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import call_mcp_tool, _coerce_optional_bool, _normalize_optional_str_none, logger
+from ..utils import (
+    call_mcp_tool,
+    _coerce_optional_bool,
+    _normalize_optional_str_none,
+    logger,
+)
 
 
 # ── GPU Profiles ─────────────────────────────────────────────────────────────
@@ -112,6 +117,7 @@ VALID_SCENARIOS = list(SCENARIO_CONFIGS.keys())
 
 # ── NAT Config ───────────────────────────────────────────────────────────────
 
+
 class RunaiNimBenchmarkConfig(FunctionBaseConfig, name="runai_nim_benchmark"):
     """Run NVIDIA NIM LLM benchmarks on Run:AI cluster (H100, H200, A100)."""
 
@@ -136,11 +142,16 @@ class RunaiNimBenchmarkConfig(FunctionBaseConfig, name="runai_nim_benchmark"):
         description="Projects allowed for benchmarking (use ['*'] for all)",
     )
     max_gpus: int = Field(default=8, description="Maximum GPUs per benchmark job")
-    default_gpu_type: str = Field(default="h100", description="Default GPU when not specified")
-    default_scenario: str = Field(default="throughput", description="Default scenario when not specified")
+    default_gpu_type: str = Field(
+        default="h100", description="Default GPU when not specified"
+    )
+    default_scenario: str = Field(
+        default="throughput", description="Default scenario when not specified"
+    )
 
 
 # ── Helper: job name ─────────────────────────────────────────────────────────
+
 
 def _benchmark_job_name(gpu: str, scenario: str) -> str:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
@@ -148,6 +159,7 @@ def _benchmark_job_name(gpu: str, scenario: str) -> str:
 
 
 # ── Helper: build genai-perf command ─────────────────────────────────────────
+
 
 def _build_benchmark_command(
     model: str,
@@ -158,61 +170,65 @@ def _build_benchmark_command(
 
     sc = scenario_cfg
     lines = [
-        'bash', '-c',
-        " && ".join([
-            'echo "=== NIM Benchmark Suite ==="',
-            f'echo "GPU: {gpu_profile["name"]}"',
-            f'echo "Scenario: {sc["name"]}"',
-            f'echo "Model: {model}"',
-            f'echo "Concurrency: {sc["concurrency"]}"',
-            f'echo "Max Tokens: {sc["max_tokens"]}"',
-            f'echo "Input Tokens: {sc["input_tokens"]}"',
-            f'echo "Total Requests: {sc["total_requests"]}"',
-            'echo "=========================="',
-            'echo ""',
-            # Install genai-perf if not present
-            'pip install genai-perf 2>/dev/null || true',
-            'echo "[1/4] Starting NIM server..."',
-            'python3 -c "import time; time.sleep(5)" &',
-            'NIM_PID=$!',
-            'echo "[2/4] Waiting for NIM to be ready..."',
-            'sleep 10',
-            'echo "[3/4] Running benchmark..."',
-            (
-                f'genai-perf profile '
-                f'--model {model} '
-                f'--endpoint-type chat '
-                f'--service-kind openai '
-                f'--url http://localhost:8000 '
-                f'--streaming '
-                f'--concurrency {sc["concurrency"]} '
-                f'--num-prompts {sc["total_requests"]} '
-                f'--input-tokens-mean {sc["input_tokens"]} '
-                f'--output-tokens-mean {sc["max_tokens"]} '
-                f'--extra-inputs max_tokens:{sc["max_tokens"]} '
-                f'--generate-plots '
-                f'-- -m {model} 2>&1 '
-                f'|| echo "genai-perf not available, running simulated benchmark"'
-            ),
-            'echo "[4/4] Collecting metrics..."',
-            'echo ""',
-            'echo "=== BENCHMARK RESULTS ==="',
-            f'echo "benchmark_gpu_type: {gpu_profile["key"]}"',
-            f'echo "benchmark_scenario: {sc["key"]}"',
-            f'echo "benchmark_model: {model}"',
-            f'echo "benchmark_concurrency: {sc["concurrency"]}"',
-            f'echo "benchmark_max_tokens: {sc["max_tokens"]}"',
-            f'echo "benchmark_total_requests: {sc["total_requests"]}"',
-            'echo "benchmark_status: completed"',
-            'echo "========================="',
-            'echo "Benchmark complete."',
-            'kill $NIM_PID 2>/dev/null || true',
-        ]),
+        "bash",
+        "-c",
+        " && ".join(
+            [
+                'echo "=== NIM Benchmark Suite ==="',
+                f'echo "GPU: {gpu_profile["name"]}"',
+                f'echo "Scenario: {sc["name"]}"',
+                f'echo "Model: {model}"',
+                f'echo "Concurrency: {sc["concurrency"]}"',
+                f'echo "Max Tokens: {sc["max_tokens"]}"',
+                f'echo "Input Tokens: {sc["input_tokens"]}"',
+                f'echo "Total Requests: {sc["total_requests"]}"',
+                'echo "=========================="',
+                'echo ""',
+                # Install genai-perf if not present
+                "pip install genai-perf 2>/dev/null || true",
+                'echo "[1/4] Starting NIM server..."',
+                'python3 -c "import time; time.sleep(5)" &',
+                "NIM_PID=$!",
+                'echo "[2/4] Waiting for NIM to be ready..."',
+                "sleep 10",
+                'echo "[3/4] Running benchmark..."',
+                (
+                    f"genai-perf profile "
+                    f"--model {model} "
+                    f"--endpoint-type chat "
+                    f"--service-kind openai "
+                    f"--url http://localhost:8000 "
+                    f"--streaming "
+                    f"--concurrency {sc['concurrency']} "
+                    f"--num-prompts {sc['total_requests']} "
+                    f"--input-tokens-mean {sc['input_tokens']} "
+                    f"--output-tokens-mean {sc['max_tokens']} "
+                    f"--extra-inputs max_tokens:{sc['max_tokens']} "
+                    f"--generate-plots "
+                    f"-- -m {model} 2>&1 "
+                    f'|| echo "genai-perf not available, running simulated benchmark"'
+                ),
+                'echo "[4/4] Collecting metrics..."',
+                'echo ""',
+                'echo "=== BENCHMARK RESULTS ==="',
+                f'echo "benchmark_gpu_type: {gpu_profile["key"]}"',
+                f'echo "benchmark_scenario: {sc["key"]}"',
+                f'echo "benchmark_model: {model}"',
+                f'echo "benchmark_concurrency: {sc["concurrency"]}"',
+                f'echo "benchmark_max_tokens: {sc["max_tokens"]}"',
+                f'echo "benchmark_total_requests: {sc["total_requests"]}"',
+                'echo "benchmark_status: completed"',
+                'echo "========================="',
+                'echo "Benchmark complete."',
+                "kill $NIM_PID 2>/dev/null || true",
+            ]
+        ),
     ]
     return " ".join(lines)
 
 
 # ── Helper: normalise user input ─────────────────────────────────────────────
+
 
 def _normalise_gpu_type(raw: Optional[str], default: str) -> str:
     """Accept 'H100', 'h100', 'NVIDIA H100', etc. and normalise to key."""
@@ -237,6 +253,7 @@ def _normalise_scenario(raw: Optional[str], default: str) -> str:
 
 # ── NAT Function Registration ────────────────────────────────────────────────
 
+
 @register_function(config_type=RunaiNimBenchmarkConfig)
 async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder):
     """
@@ -249,7 +266,6 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
     - Dry-run preview and confirmation workflow
     - Structured JSON result output
     """
-
 
     # ──────────────────────────────────────────────────────────────────────
     async def _run_benchmark(
@@ -289,7 +305,11 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
             image = _normalize_optional_str_none(image)
             node_pool = _normalize_optional_str_none(node_pool)
             if isinstance(gpu_count, str):
-                gpu_count = None if gpu_count.strip().lower() in ("none", "null", "") else (int(gpu_count) if gpu_count.strip().isdigit() else None)
+                gpu_count = (
+                    None
+                    if gpu_count.strip().lower() in ("none", "null", "")
+                    else (int(gpu_count) if gpu_count.strip().isdigit() else None)
+                )
             dry_run = _coerce_optional_bool(dry_run)
 
             # ── 1. Normalise & apply defaults ────────────────────────────
@@ -314,7 +334,9 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
             # ── 2. Resolve project ───────────────────────────────────────
             effective_project = project or os.environ.get("RUNAI_BENCHMARK_PROJECT")
 
-            command = _build_benchmark_command(effective_model, scenario_cfg, gpu_profile)
+            command = _build_benchmark_command(
+                effective_model, scenario_cfg, gpu_profile
+            )
 
             # ── 3. Build structured job spec ─────────────────────────────
             benchmark_spec = {
@@ -370,27 +392,36 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                     project_list = projects_data.get("projects", [])
                     if project_list:
                         effective_project = project_list[0].get("name")
-                        logger.info(f"No project specified, defaulting to: {effective_project}")
+                        logger.info(
+                            f"No project specified, defaulting to: {effective_project}"
+                        )
                     else:
                         return "❌ **No projects found** in the Run:AI cluster."
                 except Exception as e:
                     return f"❌ **Could not list projects from MCP server:** {e}"
 
             # Validate project access
-            if "*" not in config.allowed_projects and effective_project not in config.allowed_projects:
+            if (
+                "*" not in config.allowed_projects
+                and effective_project not in config.allowed_projects
+            ):
                 return f"❌ **Project '{effective_project}' not in allowed list:** {config.allowed_projects}"
 
             logger.info(f"Submitting benchmark job: {job_name}")
             try:
-                result = await call_mcp_tool(mcp_url, "submit_training", {
-                    "name": job_name,
-                    "project_name": effective_project,
-                    "image": effective_image,
-                    "gpu_devices": int(effective_gpu_count),
-                    "cpu_core_request": 4.0,
-                    "cpu_memory_request": "32Gi",
-                    "command": command,
-                })
+                result = await call_mcp_tool(
+                    mcp_url,
+                    "submit_training",
+                    {
+                        "name": job_name,
+                        "project_name": effective_project,
+                        "image": effective_image,
+                        "gpu_devices": int(effective_gpu_count),
+                        "cpu_core_request": 4.0,
+                        "cpu_memory_request": "32Gi",
+                        "command": command,
+                    },
+                )
             except Exception as e:
                 return (
                     f"❌ **Benchmark Submission Failed**\n\n"
@@ -507,7 +538,11 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
                 "\nThese defaults are applied when the user does not specify a parameter."
             )
 
-        return "\n\n".join(sections) if sections else "Please specify info_type: gpus, scenarios, or defaults."
+        return (
+            "\n\n".join(sections)
+            if sections
+            else "Please specify info_type: gpus, scenarios, or defaults."
+        )
 
     # ──────────────────────────────────────────────────────────────────────
     # Yield function info to NAT
@@ -531,6 +566,7 @@ async def runai_nim_benchmark(config: RunaiNimBenchmarkConfig, builder: Builder)
 
 # ── Formatting helpers ───────────────────────────────────────────────────────
 
+
 def _format_preview(spec: dict, gpu_profile: dict, scenario_cfg: dict) -> str:
     """Return a human-readable preview of the benchmark spec."""
     return (
@@ -548,4 +584,3 @@ def _format_preview(spec: dict, gpu_profile: dict, scenario_cfg: dict) -> str:
         f"| Max Tokens | {scenario_cfg['max_tokens']} |\n"
         f"| Input Tokens | {scenario_cfg['input_tokens']} |\n"
     )
-

@@ -16,11 +16,18 @@ from nat.builder.function_info import FunctionInfo
 from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
-from ..utils import _get_secure_runai_config, _coerce_optional_int, _normalize_optional_str_none, _workload_image, logger
+from ..utils import (
+    _get_secure_runai_config,
+    _coerce_optional_int,
+    _normalize_optional_str_none,
+    _workload_image,
+    logger,
+)
 
 
 class JobAnalyticsConfig(FunctionBaseConfig, name="runai_job_analytics"):
     """Configuration for job performance analytics."""
+
     description: str = (
         "Job performance analytics: execution time trends, failure rates by project/image, "
         "recommendations, and anomaly detection (jobs running 3x longer than usual)."
@@ -30,7 +37,9 @@ class JobAnalyticsConfig(FunctionBaseConfig, name="runai_job_analytics"):
         description="Path to SQLite database (same as failure analyzer)",
     )
     lookback_days: int = Field(default=7, description="Days of history to analyze")
-    allowed_projects: List[str] = Field(default_factory=lambda: ["*"], description="Projects to include")
+    allowed_projects: List[str] = Field(
+        default_factory=lambda: ["*"], description="Projects to include"
+    )
 
 
 def _format_duration(seconds: int) -> str:
@@ -58,7 +67,11 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
     ) -> str:
         days = _coerce_optional_int(lookback_days, config.lookback_days)
         project = _normalize_optional_str_none(project)
-        if project and "*" not in config.allowed_projects and project not in config.allowed_projects:
+        if (
+            project
+            and "*" not in config.allowed_projects
+            and project not in config.allowed_projects
+        ):
             return f"❌ Access denied to project '{project}'"
 
         try:
@@ -81,7 +94,7 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                 "## 📈 Execution time trends\n\n"
                 "No run history with duration yet.\n\n"
                 "**How data is collected:** In Kubernetes, the monitoring sidecar records job completions automatically. "
-                "Otherwise, say **\"Start monitoring all jobs\"** in chat to record completions. Trends will appear once data is recorded."
+                'Otherwise, say **"Start monitoring all jobs"** in chat to record completions. Trends will appear once data is recorded.'
             )
         else:
             lines = [
@@ -90,11 +103,15 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
             ]
             if agg.get("by_project"):
                 lines.append("\n**By project:**")
-                for proj, avg_sec in sorted(agg["by_project"].items(), key=lambda x: -x[1])[:10]:
+                for proj, avg_sec in sorted(
+                    agg["by_project"].items(), key=lambda x: -x[1]
+                )[:10]:
                     lines.append(f"- {proj}: {_format_duration(avg_sec)} avg")
             if agg.get("by_image"):
                 lines.append("\n**By image (top 5):**")
-                for img, avg_sec in sorted(agg["by_image"].items(), key=lambda x: -x[1])[:5]:
+                for img, avg_sec in sorted(
+                    agg["by_image"].items(), key=lambda x: -x[1]
+                )[:5]:
                     short_img = (img[:60] + "…") if len(img) > 60 else img
                     lines.append(f"- {short_img}: {_format_duration(avg_sec)} avg")
             sections.append("## 📈 Execution time trends\n\n" + "\n".join(lines))
@@ -108,14 +125,18 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
             if project:
                 proj_failures = {k: v for k, v in proj_failures.items() if k == project}
             if not fail_types and not proj_failures:
-                sections.append("## 🔴 Failure rates\n\nNo failures recorded in this period.")
+                sections.append(
+                    "## 🔴 Failure rates\n\nNo failures recorded in this period."
+                )
             else:
                 lines = [f"- **Failure types:** {dict(fail_types)}", "**By project:**"]
                 for p, c in sorted(proj_failures.items(), key=lambda x: -x[1])[:10]:
                     lines.append(f"- {p}: {c}")
                 if image_failures:
                     lines.append("\n**By image (top 5):**")
-                    for img, c in sorted(image_failures.items(), key=lambda x: -x[1])[:5]:
+                    for img, c in sorted(image_failures.items(), key=lambda x: -x[1])[
+                        :5
+                    ]:
                         short_img = (img[:50] + "…") if len(img) > 50 else img
                         lines.append(f"- {short_img}: {c}")
                 sections.append("## 🔴 Failure rates\n\n" + "\n".join(lines))
@@ -123,19 +144,33 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
             # 3. Recommendations
             recs = []
             if agg.get("by_project"):
-                for proj, avg_sec in sorted(agg["by_project"].items(), key=lambda x: -x[1])[:3]:
-                    recs.append(f"- **{proj}**: Training jobs typically take ~{_format_duration(avg_sec)} — schedule accordingly.")
+                for proj, avg_sec in sorted(
+                    agg["by_project"].items(), key=lambda x: -x[1]
+                )[:3]:
+                    recs.append(
+                        f"- **{proj}**: Training jobs typically take ~{_format_duration(avg_sec)} — schedule accordingly."
+                    )
             if not recs:
-                recs.append("- Execution trends appear once completions are recorded (by the monitoring sidecar in Kubernetes or by saying **\"Start monitoring all jobs\"** in chat).")
+                recs.append(
+                    '- Execution trends appear once completions are recorded (by the monitoring sidecar in Kubernetes or by saying **"Start monitoring all jobs"** in chat).'
+                )
             sections.append("## 💡 Recommendations\n\n" + "\n".join(recs))
 
             # 4. Anomaly: running jobs taking much longer than usual (with timeout so request cannot hang)
             secure = _get_secure_runai_config()
-            if all([secure.get("RUNAI_CLIENT_ID"), secure.get("RUNAI_CLIENT_SECRET"), secure.get("RUNAI_BASE_URL")]):
+            if all(
+                [
+                    secure.get("RUNAI_CLIENT_ID"),
+                    secure.get("RUNAI_CLIENT_SECRET"),
+                    secure.get("RUNAI_BASE_URL"),
+                ]
+            ):
+
                 def _anomaly_sync() -> str:
                     from runai.configuration import Configuration
                     from runai.api_client import ApiClient
                     from runai.runai_client import RunaiClient
+
                     configuration = Configuration(
                         client_id=secure["RUNAI_CLIENT_ID"],
                         client_secret=secure["RUNAI_CLIENT_SECRET"],
@@ -144,8 +179,15 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                     client = RunaiClient(ApiClient(configuration))
                     response = client.workloads.workloads.get_workloads()
                     data = response.data if hasattr(response, "data") else response
-                    workloads = data.get("workloads", []) if isinstance(data, dict) else []
-                    running = [w for w in workloads if w.get("phase") == "Running" or w.get("actualPhase") == "Running"]
+                    workloads = (
+                        data.get("workloads", []) if isinstance(data, dict) else []
+                    )
+                    running = [
+                        w
+                        for w in workloads
+                        if w.get("phase") == "Running"
+                        or w.get("actualPhase") == "Running"
+                    ]
                     by_image = agg.get("by_image") or {}
                     anomalies = []
                     now = datetime.utcnow()
@@ -155,7 +197,9 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                             continue
                         try:
                             if "Z" in created or "+" in created:
-                                created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                                created_dt = datetime.fromisoformat(
+                                    created.replace("Z", "+00:00")
+                                )
                             else:
                                 created_dt = datetime.fromisoformat(created)
                             if created_dt.tzinfo:
@@ -164,15 +208,21 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                         except (ValueError, TypeError):
                             continue
                         img = _workload_image(w) or "unknown"
-                        avg_sec = by_image.get(img) or agg.get("avg_duration_seconds") or 3600
+                        avg_sec = (
+                            by_image.get(img) or agg.get("avg_duration_seconds") or 3600
+                        )
                         if avg_sec and elapsed > 3 * avg_sec:
                             anomalies.append(
                                 f"- **{w.get('name')}** ({w.get('projectName')}): running {_format_duration(elapsed)} "
                                 f"(avg for this image: {_format_duration(avg_sec)}) — consider checking."
                             )
                     if anomalies:
-                        return "## ⚠️ Possible anomalies (running 3× longer than usual)\n\n" + "\n".join(anomalies[:10])
+                        return (
+                            "## ⚠️ Possible anomalies (running 3× longer than usual)\n\n"
+                            + "\n".join(anomalies[:10])
+                        )
                     return "## ⚠️ Anomalies\n\nNo running jobs are significantly longer than their usual duration."
+
                 try:
                     section = await asyncio.wait_for(
                         asyncio.to_thread(_anomaly_sync),
@@ -181,12 +231,18 @@ async def runai_job_analytics(config: JobAnalyticsConfig, builder: Builder):
                     sections.append(section)
                 except asyncio.TimeoutError:
                     logger.warning("Anomaly check timed out (Run:AI API)")
-                    sections.append("## ⚠️ Anomalies\n\nAnomaly check timed out (Run:AI API slow or unreachable).")
+                    sections.append(
+                        "## ⚠️ Anomalies\n\nAnomaly check timed out (Run:AI API slow or unreachable)."
+                    )
                 except Exception as e:
                     logger.debug(f"Anomaly check skipped: {e}")
-                    sections.append("## ⚠️ Anomalies\n\nCould not fetch running jobs for anomaly check (Run:AI API).")
+                    sections.append(
+                        "## ⚠️ Anomalies\n\nCould not fetch running jobs for anomaly check (Run:AI API)."
+                    )
             else:
-                sections.append("## ⚠️ Anomalies\n\nRun:AI credentials not set; anomaly detection skipped.")
+                sections.append(
+                    "## ⚠️ Anomalies\n\nRun:AI credentials not set; anomaly detection skipped."
+                )
 
             return (
                 "📊 **Job Performance Analytics**\n\n"

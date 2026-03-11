@@ -13,16 +13,20 @@ from ..utils import call_mcp_tool, logger
 
 class RunailabsEnvironmentConfig(FunctionBaseConfig, name="runailabs_environment_info"):
     """Show RunaiLabs env info."""
+
     description: str = "Get cluster information and list available environments. Use to show cluster details or available environment templates."
     show_details: bool = Field(default=True, description="Show detailed info")
 
 
 @register_function(config_type=RunailabsEnvironmentConfig)
-async def runailabs_environment_info(config: RunailabsEnvironmentConfig, builder: Builder):
+async def runailabs_environment_info(
+    config: RunailabsEnvironmentConfig, builder: Builder
+):
     """
     Show Run:AI environment information including available projects and cluster details.
     Queries the MCP server for live project data.
     """
+
     async def _response_fn(input_message: str) -> str:
         try:
             mcp_url = os.environ.get("MCP_SERVER_URL", "").rstrip("/")
@@ -51,7 +55,11 @@ async def runailabs_environment_info(config: RunailabsEnvironmentConfig, builder
                     gpu_quota = project.get("totalResources", {}).get("gpuQuota", 0)
                     if gpu_quota == 0:
                         resources = project.get("resources", [])
-                        if resources and isinstance(resources, list) and len(resources) > 0:
+                        if (
+                            resources
+                            and isinstance(resources, list)
+                            and len(resources) > 0
+                        ):
                             gpu_quota = resources[0].get("gpu", {}).get("deserved", 0)
 
                     response += (
@@ -88,7 +96,7 @@ async def runailabs_environment_info(config: RunailabsEnvironmentConfig, builder
     try:
         yield FunctionInfo.create(
             single_fn=_response_fn,
-            description="Get cluster information and list available environments. Use to show cluster details or available environment templates."
+            description="Get cluster information and list available environments. Use to show cluster details or available environment templates.",
         )
     except GeneratorExit:
         logger.info("Env info exited")

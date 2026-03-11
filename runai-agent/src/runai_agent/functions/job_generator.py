@@ -17,12 +17,20 @@ from ..utils import get_secure_config, sanitize_input, examples_fetcher, logger
 
 class RunailabsJobGeneratorConfig(FunctionBaseConfig, name="runailabs_job_generator"):
     """Generate RunaiLabs job submission code for any workload type."""
+
     description: str = "Generate Python code for job submission by fetching real examples from GitHub. Use when user requests code generation or examples."
-    show_code_in_output: bool = Field(default=True, description="Whether to display generated code in stdout output")
-    save_to_file: bool = Field(default=False, description="Whether to save generated code to a file")
-    auto_search_examples: bool = Field(default=True, description="Automatically search for real SDK examples before generating code (requires runapy_code_search function)")
-    
-    @validator('*', pre=True)
+    show_code_in_output: bool = Field(
+        default=True, description="Whether to display generated code in stdout output"
+    )
+    save_to_file: bool = Field(
+        default=False, description="Whether to save generated code to a file"
+    )
+    auto_search_examples: bool = Field(
+        default=True,
+        description="Automatically search for real SDK examples before generating code (requires runapy_code_search function)",
+    )
+
+    @validator("*", pre=True)
     def validate_inputs(cls, v):
         """Validate and sanitize all inputs."""
         if isinstance(v, str):
@@ -31,47 +39,57 @@ class RunailabsJobGeneratorConfig(FunctionBaseConfig, name="runailabs_job_genera
 
 
 @register_function(config_type=RunailabsJobGeneratorConfig)
-async def runailabs_job_generator(config: RunailabsJobGeneratorConfig, builder: Builder):
+async def runailabs_job_generator(
+    config: RunailabsJobGeneratorConfig, builder: Builder
+):
     """Generate Python code for submitting Run:AI jobs"""
-    
+
     async def _response_fn(input_message: str) -> str:
         try:
             # Sanitize input
             input_message = sanitize_input(input_message)
             input_lower = input_message.lower()
-            now = datetime.now().strftime('%Y%m%d-%H%M%S')
-            
+            now = datetime.now().strftime("%Y%m%d-%H%M%S")
+
             # Fetch real examples from GitHub
             real_example = None
             search_note = ""
-            
+
             if config.auto_search_examples:
                 try:
                     logger.info("🔍 Fetching runapy examples from GitHub...")
-                    
+
                     # Fetch examples (uses cache if available)
                     await examples_fetcher.get_examples()
-                    
+
                     # Determine category based on job type
-                    if any(word in input_lower for word in ['distributed', 'multi-gpu', 'parallel']):
+                    if any(
+                        word in input_lower
+                        for word in ["distributed", "multi-gpu", "parallel"]
+                    ):
                         category = "distributed"
-                    elif any(word in input_lower for word in ['workspace', 'notebook', 'jupyter']):
+                    elif any(
+                        word in input_lower
+                        for word in ["workspace", "notebook", "jupyter"]
+                    ):
                         category = "workspace"
-                    elif any(word in input_lower for word in ['inference', 'serving']):
+                    elif any(word in input_lower for word in ["inference", "serving"]):
                         category = "general"  # inference examples might be in general
                     else:
                         category = "training"
-                    
+
                     # Find relevant example
-                    real_example = examples_fetcher.find_relevant_example(input_message, category)
-                    
+                    real_example = examples_fetcher.find_relevant_example(
+                        input_message, category
+                    )
+
                     if real_example:
                         search_note = f"\n✅ **Using real example from GitHub**: `{real_example['filename']}`\n{real_example['description']}\n"
                         logger.info(f"✓ Using example: {real_example['filename']}")
                     else:
                         search_note = "\n💡 **Note**: No specific examples found. Using fallback template.\n"
                         logger.warning("No examples found, using fallback template")
-                        
+
                 except Exception as e:
                     logger.warning(f"Example fetch failed: {e}")
                     search_note = "\n💡 **Note**: Could not fetch examples from GitHub. Using fallback template.\n"
@@ -87,10 +105,16 @@ async def runailabs_job_generator(config: RunailabsJobGeneratorConfig, builder: 
 
             # Enhanced workload detection with better patterns
             workload_patterns = {
-                'jupyter_workspace': ['workspace', 'notebook', 'jupyter', 'dev', 'interactive'],
-                'inference': ['inference', 'serving', 'model', 'predict', 'triton'],
-                'distributed': ['distributed', 'multi-gpu', 'multi-gpu', 'parallel'],
-                'training': ['train', 'training', 'fit', 'epoch', 'model training']
+                "jupyter_workspace": [
+                    "workspace",
+                    "notebook",
+                    "jupyter",
+                    "dev",
+                    "interactive",
+                ],
+                "inference": ["inference", "serving", "model", "predict", "triton"],
+                "distributed": ["distributed", "multi-gpu", "multi-gpu", "parallel"],
+                "training": ["train", "training", "fit", "epoch", "model training"],
             }
 
             # Detect workload type
@@ -102,19 +126,19 @@ async def runailabs_job_generator(config: RunailabsJobGeneratorConfig, builder: 
 
             if not job_type:
                 # Default to training if no specific pattern detected
-                job_type = 'training'
+                job_type = "training"
 
             # Generate job template based on type
             job_template = await generate_job_template(
-                job_type, 
-                input_message, 
-                now, 
+                job_type,
+                input_message,
+                now,
                 secure_config,
                 output_dir,
                 config.show_code_in_output,
                 config.save_to_file,
                 search_note,
-                real_example
+                real_example,
             )
 
             return job_template
@@ -124,25 +148,25 @@ async def runailabs_job_generator(config: RunailabsJobGeneratorConfig, builder: 
             return f"❌ Error generating job: {str(e)}"
 
     async def generate_job_template(
-        job_type: str, 
-        input_message: str, 
-        timestamp: str, 
+        job_type: str,
+        input_message: str,
+        timestamp: str,
         config: Dict[str, str],
         output_dir: Path,
         show_code_in_output: bool = True,
         save_to_file: bool = False,
         search_note: str = "",
-        real_example: Optional[Dict[str, str]] = None
+        real_example: Optional[Dict[str, str]] = None,
     ) -> str:
         """Generate job template with enhanced security and validation."""
-        
+
         # If we have a real example from GitHub, use it as the base
         if real_example:
             logger.info(f"Using real example: {real_example['filename']}")
-            
+
             # Use the real example code with minimal modifications
-            example_code = real_example['code']
-            
+            example_code = real_example["code"]
+
             # Add configuration setup at the top if not present
             if "Configuration(" not in example_code:
                 config_header = """# Secure configuration from environment variables
@@ -159,9 +183,9 @@ client = RunaiClient(ApiClient(configuration))
 
 """
                 example_code = config_header + example_code
-            
+
             # Return with clear markdown formatting (must preserve newlines)
-            response_message = f"""✅ Generated {job_type.replace('_', ' ').title()} job code using real GitHub example: `{real_example['filename']}`
+            response_message = f"""✅ Generated {job_type.replace("_", " ").title()} job code using real GitHub example: `{real_example["filename"]}`
 
 📄 **Complete Python Script:**
 
@@ -175,10 +199,10 @@ client = RunaiClient(ApiClient(configuration))
 3. Run: `python your_script.py`
 """
             return response_message
-        
+
         # Fallback: Use template-based generation
         base_config = f"""
-# RunaiLabs {job_type.replace('_', ' ').title()} Job
+# RunaiLabs {job_type.replace("_", " ").title()} Job
 import os
 import sys
 from runai.configuration import Configuration
@@ -197,64 +221,66 @@ client = RunaiClient(ApiClient(configuration))
 
         # Job-specific configurations
         job_configs = {
-            'jupyter_workspace': {
-                'name': f"jupyter-workspace-{timestamp}",
-                'image': "jupyter/scipy-notebook:latest",
-                'command': "start-notebook.sh --NotebookApp.token='' --NotebookApp.allow_origin='*'",
-                'resources': {"gpu": 1, "cpu": 4, "memory": "16Gi"},
-                'external_url': {"container": 8888},
-                'description': "Interactive Jupyter workspace for development and experimentation"
+            "jupyter_workspace": {
+                "name": f"jupyter-workspace-{timestamp}",
+                "image": "jupyter/scipy-notebook:latest",
+                "command": "start-notebook.sh --NotebookApp.token='' --NotebookApp.allow_origin='*'",
+                "resources": {"gpu": 1, "cpu": 4, "memory": "16Gi"},
+                "external_url": {"container": 8888},
+                "description": "Interactive Jupyter workspace for development and experimentation",
             },
-            'inference': {
-                'name': f"inference-service-{timestamp}",
-                'image': "nvcr.io/nvidia/tritonserver:23.10-py3",
-                'command': "tritonserver --model-repository=/models --http-thread-count=4",
-                'resources': {"gpu": 1, "cpu": 2, "memory": "8Gi"},
-                'external_url': {"container": 8000, "external": 8080},
-                'description': "Model inference service using NVIDIA Triton"
+            "inference": {
+                "name": f"inference-service-{timestamp}",
+                "image": "nvcr.io/nvidia/tritonserver:23.10-py3",
+                "command": "tritonserver --model-repository=/models --http-thread-count=4",
+                "resources": {"gpu": 1, "cpu": 2, "memory": "8Gi"},
+                "external_url": {"container": 8000, "external": 8080},
+                "description": "Model inference service using NVIDIA Triton",
             },
-            'distributed': {
-                'name': f"dist-training-{timestamp}",
-                'image': "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
-                'command': "python -m torch.distributed.launch --nproc_per_node=1 train.py --epochs 90",
-                'resources': {"gpu": 1, "cpu": 4, "memory": "16Gi"},
-                'distributed': {
+            "distributed": {
+                "name": f"dist-training-{timestamp}",
+                "image": "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
+                "command": "python -m torch.distributed.launch --nproc_per_node=1 train.py --epochs 90",
+                "resources": {"gpu": 1, "cpu": 4, "memory": "16Gi"},
+                "distributed": {
                     "nodes": 2,
                     "processes_per_node": 1,
-                    "framework": "PyTorch"
+                    "framework": "PyTorch",
                 },
-                'description': "Distributed training job with PyTorch"
+                "description": "Distributed training job with PyTorch",
             },
-            'training': {
-                'name': f"training-job-{timestamp}",
-                'image': "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
-                'command': "python train.py --epochs 50 --batch-size 32",
-                'resources': {"gpu": 1, "cpu": 4, "memory": "16Gi"},
-                'description': "Single-GPU training job"
-            }
+            "training": {
+                "name": f"training-job-{timestamp}",
+                "image": "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
+                "command": "python train.py --epochs 50 --batch-size 32",
+                "resources": {"gpu": 1, "cpu": 4, "memory": "16Gi"},
+                "description": "Single-GPU training job",
+            },
         }
 
         job_spec = job_configs[job_type]
-        
+
         # Generate the complete job code
         job_code = f"""{base_config}
 
 # Job specification
 job_spec = {{
-    "name": "{job_spec['name']}",
+    "name": "{job_spec["name"]}",
     "project": "test",
-    "image": "{job_spec['image']}",
-    "command": "{job_spec['command']}",
-    "resources": {json.dumps(job_spec['resources'], indent=4)},
+    "image": "{job_spec["image"]}",
+    "command": "{job_spec["command"]}",
+    "resources": {json.dumps(job_spec["resources"], indent=4)},
 """
 
         # Add job-specific fields
-        if 'external_url' in job_spec:
+        if "external_url" in job_spec:
             job_code += f'    "external_url": {json.dumps(job_spec["external_url"], indent=4)},\n'
-        if 'expose_ports' in job_spec:
+        if "expose_ports" in job_spec:
             job_code += f'    "expose_ports": {json.dumps(job_spec["expose_ports"], indent=4)},\n'  # kept for safety if present
-        if 'distributed' in job_spec:
-            job_code += f'    "distributed": {json.dumps(job_spec["distributed"], indent=4)},\n'
+        if "distributed" in job_spec:
+            job_code += (
+                f'    "distributed": {json.dumps(job_spec["distributed"], indent=4)},\n'
+            )
 
         job_code += """}
 
@@ -316,10 +342,10 @@ print(json.dumps(job_spec, indent=2))
 """
 
         # Build the response message with explicit instruction for the agent
-        response_message = f"""✅ Generated {job_type.replace('_', ' ').title()} Job Template
+        response_message = f"""✅ Generated {job_type.replace("_", " ").title()} Job Template
 
-**Job Type:** {job_spec['description']}
-**Resources:** {job_spec['resources']}
+**Job Type:** {job_spec["description"]}
+**Resources:** {job_spec["resources"]}
 
 {search_note}
 """
@@ -327,12 +353,14 @@ print(json.dumps(job_spec, indent=2))
         # Conditionally save to file
         if save_to_file:
             filename = output_dir / f"{job_type}_{timestamp}.py"
-            async with aiofiles.open(filename, 'w') as f:
+            async with aiofiles.open(filename, "w") as f:
                 await f.write(job_code)
             response_message += f"\n**File:** {filename}\n\nThe job template has been saved to: {filename}\n"
-        
+
         # Add usage instructions
-        response_message += "\nTo submit the job, uncomment the submission code in the script below."
+        response_message += (
+            "\nTo submit the job, uncomment the submission code in the script below."
+        )
 
         # Add generated code to output if requested
         if show_code_in_output:
@@ -344,16 +372,15 @@ print(json.dumps(job_spec, indent=2))
 {job_code}
 ```
 """
-        
+
         return response_message
 
     try:
         yield FunctionInfo.create(
             single_fn=_response_fn,
-            description="Generate Python code for job submission by fetching real examples from GitHub. Use when user requests code generation or examples."
+            description="Generate Python code for job submission by fetching real examples from GitHub. Use when user requests code generation or examples.",
         )
     except GeneratorExit:
         logger.info("Job generator exited")
     finally:
         logger.info("Cleaning up job generator")
-

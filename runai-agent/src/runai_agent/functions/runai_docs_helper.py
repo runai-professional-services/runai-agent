@@ -12,6 +12,7 @@ from pydantic import Field
 
 class RunaiDocsHelperConfig(FunctionBaseConfig, name="runai_docs_helper"):
     """Configuration for Run:AI documentation helper."""
+
     description: str = Field(
         default="Get direct links to Run:AI documentation topics. Use this when webpage_query doesn't find results or for well-known Run:AI concepts like nodePools, projects, workloads, etc.",
     )
@@ -23,63 +24,63 @@ DOCS_INDEX = {
     "nodepool": {
         "title": "Node Pools",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/resources/node-pools",
-        "description": "Node pools allow you to assign specific nodes to projects/departments for workload scheduling."
+        "description": "Node pools allow you to assign specific nodes to projects/departments for workload scheduling.",
     },
     "node pool": {
         "title": "Node Pools",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/resources/node-pools",
-        "description": "Node pools allow you to assign specific nodes to projects/departments for workload scheduling."
+        "description": "Node pools allow you to assign specific nodes to projects/departments for workload scheduling.",
     },
     "project": {
         "title": "Projects",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/organization/projects",
-        "description": "Projects are the fundamental organizational unit in Run:AI for resource allocation and access control."
+        "description": "Projects are the fundamental organizational unit in Run:AI for resource allocation and access control.",
     },
     "department": {
         "title": "Departments",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/organization/departments",
-        "description": "Departments group multiple projects for hierarchical resource management."
+        "description": "Departments group multiple projects for hierarchical resource management.",
     },
     "workload": {
         "title": "Workloads",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/workloads/workloads",
-        "description": "Workloads are compute jobs (training, interactive, inference) running in Run:AI."
+        "description": "Workloads are compute jobs (training, interactive, inference) running in Run:AI.",
     },
     "gpu": {
         "title": "GPU Allocation & Scheduling",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/scheduling-and-resource-optimization/the-runai-scheduler",
-        "description": "How Run:AI allocates and schedules GPU resources across workloads."
+        "description": "How Run:AI allocates and schedules GPU resources across workloads.",
     },
     "quota": {
         "title": "GPU Quotas",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/organization/projects",
-        "description": "Setting GPU quotas and limits for projects and departments (see Projects documentation)."
+        "description": "Setting GPU quotas and limits for projects and departments (see Projects documentation).",
     },
     "scheduler": {
         "title": "Scheduler",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/scheduling-and-resource-optimization/the-runai-scheduler",
-        "description": "How the Run:AI scheduler prioritizes and allocates resources."
+        "description": "How the Run:AI scheduler prioritizes and allocates resources.",
     },
     "pvc": {
         "title": "Storage & Data Sources",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/workloads/workload-assets",
-        "description": "Persistent Volume Claims and storage configuration for workloads in Run:AI."
+        "description": "Persistent Volume Claims and storage configuration for workloads in Run:AI.",
     },
     "datasource": {
         "title": "Data Sources & Workload Assets",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/workloads/workload-assets",
-        "description": "Managing data sources (NFS, PVC, S3, Git) and workload assets in Run:AI."
+        "description": "Managing data sources (NFS, PVC, S3, Git) and workload assets in Run:AI.",
     },
     "network topology": {
         "title": "Network Topology-Aware Scheduling",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/resources/topology-aware-scheduling",
-        "description": "Accelerating workloads by optimizing pod placement based on network topology to keep nodes as close as possible."
+        "description": "Accelerating workloads by optimizing pod placement based on network topology to keep nodes as close as possible.",
     },
     "topology": {
         "title": "Network Topology-Aware Scheduling",
         "url": "https://run-ai-docs.nvidia.com/self-hosted/platform-management/aiinitiatives/resources/topology-aware-scheduling",
-        "description": "Accelerating workloads by optimizing pod placement based on network topology to keep nodes as close as possible."
-    }
+        "description": "Accelerating workloads by optimizing pod placement based on network topology to keep nodes as close as possible.",
+    },
 }
 
 
@@ -87,49 +88,53 @@ DOCS_INDEX = {
 async def runai_docs_helper(config: RunaiDocsHelperConfig, builder: Builder):
     """
     Get direct links to Run:AI documentation topics.
-    
+
     This function provides direct access to known Run:AI documentation pages,
     serving as a fallback when webpage_query doesn't find results.
-    
+
     Args:
         config: Function configuration
         builder: NAT builder instance
-        
+
     Yields:
         FunctionInfo with the documentation lookup function
     """
-    
+
     async def _lookup_docs(query: str) -> str:
         """
         Look up documentation for a Run:AI topic.
-        
+
         Args:
             query: The topic to search for (e.g., "node pool", "project", "gpu quota")
-            
+
         Returns:
             Formatted documentation references with direct links
         """
         query_lower = query.lower().strip()
-        
+
         # Try exact match first
         if query_lower in DOCS_INDEX:
             doc = DOCS_INDEX[query_lower]
             return f"""
-📚 **{doc['title']}**
+📚 **{doc["title"]}**
 
-{doc['description']}
+{doc["description"]}
 
-🔗 **Documentation:** {doc['url']}
+🔗 **Documentation:** {doc["url"]}
 
 For more details, visit the link above or search the Run:AI documentation site.
 """
-        
+
         # Try partial match
         matches = []
         for key, doc in DOCS_INDEX.items():
-            if query_lower in key or key in query_lower or query_lower in doc['title'].lower():
+            if (
+                query_lower in key
+                or key in query_lower
+                or query_lower in doc["title"].lower()
+            ):
                 matches.append(doc)
-        
+
         if matches:
             result = f"📚 Found {len(matches)} documentation page(s) related to '{query}':\n\n"
             for doc in matches:
@@ -137,7 +142,7 @@ For more details, visit the link above or search the Run:AI documentation site.
                 result += f"{doc['description']}\n"
                 result += f"🔗 {doc['url']}\n\n"
             return result
-        
+
         # No matches found - provide general guidance
         return f"""
 ℹ️ No direct documentation link found for '{query}'.
@@ -157,14 +162,13 @@ For more details, visit the link above or search the Run:AI documentation site.
 
 Would you like me to help you find information about any of these topics?
 """
-    
+
     try:
         yield FunctionInfo.create(
             single_fn=_lookup_docs,
-            description="Get direct links to Run:AI documentation topics (nodePools, projects, workloads, GPU quotas, datasources, scheduler). Fast and reliable for well-known concepts."
+            description="Get direct links to Run:AI documentation topics (nodePools, projects, workloads, GPU quotas, datasources, scheduler). Fast and reliable for well-known concepts.",
         )
     except GeneratorExit:
         pass
     finally:
         pass
-

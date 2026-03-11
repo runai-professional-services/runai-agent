@@ -482,7 +482,7 @@ spec:
 
 ## 🚀 Submitting Jobs with the Agent
 
-The agent submits workloads directly to your Run:AI cluster via the MCP server's `submit_training`, `submit_inference`, and `submit_workspace` tools. Jobs are submitted immediately — no confirmation step required.
+The agent submits workloads directly to your Run:AI cluster via the MCP server. Jobs are submitted immediately — no confirmation step required. Interactive workspaces (Jupyter, VSCode, etc.) are handled by the built-in `runai_workspace` tool, which automatically sets the correct command, args, tool type, and port so the **Connect** button in the Run:AI UI generates a working URL.
 
 ### 📝 Job Submission Examples
 
@@ -529,14 +529,18 @@ Submit a Jupyter workspace named my-jupyter in project-01 with image jupyter/sci
 
 **Agent Response:**
 ```
-✅ Workspace submitted successfully!
+✅ Workspace Submitted
 
-Workspace ID: 462b67de-353f-4f8e-b3e2-73aeab837c01
-Name: my-jupyter
-Project: project-01
-Image: jupyter/scipy-notebook
-GPU: 1
-Status: Creating
+| Parameter | Value                        |
+|-----------|------------------------------|
+| Workload  | my-jupyter                   |
+| Project   | project-01                   |
+| Image     | jupyter/scipy-notebook       |
+| Tool      | Jupyter (port 8888)          |
+| GPUs      | 1 × 1.0                      |
+| Workload ID | 462b67de-353f-4f8e-b3e2-73aeab837c01 |
+
+Once Running, use the Connect button in the Run:AI UI to open the notebook.
 ```
 
 #### Example 4: NGC Credential Management

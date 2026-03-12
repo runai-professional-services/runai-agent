@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.50] - 2026-03-12
+
+### Changed
+- Fix/list jobs (#81) (aec82c3)
+
+
 ## [0.1.49] - 2026-03-11
 
 ### Changed
@@ -191,5 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.48]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.48
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.49...HEAD
 [0.1.49]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.49
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.50...HEAD
+[0.1.50]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.50

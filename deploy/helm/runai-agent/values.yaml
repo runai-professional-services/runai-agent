@@ -10,6 +10,22 @@ global:
   # Deployment name for the agent
   deploymentName: "runai-agent"
 
+# ── Redis (conversation memory) ──────────────────────────────────────────────
+# Redis stores per-user conversation history for multi-turn interactions.
+# The auto_memory_agent in workflow.yaml retrieves the last 10 exchanges per user.
+# User identity is taken from the X-User-ID request header (set by runai-cli from
+# RUNAI_USER_ID env var, falling back to the OS username).
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""          # set via --set redis.auth.password=...
+    existingSecret: ""    # or point to a pre-existing Secret with key redis-password
+  master:
+    persistence:
+      enabled: false      # in-memory only; history is short-lived by design
+
 # MCP server configuration
 # When mcp-server-runai.enabled=true (default), the URL is auto-derived from the subchart's
 # ClusterIP service. Override url only if you are pointing at an existing MCP server deployment.

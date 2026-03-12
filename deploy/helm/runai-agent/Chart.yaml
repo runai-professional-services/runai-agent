@@ -22,4 +22,8 @@ dependencies:
     version: "~0.1.0"
     repository: "oci://ghcr.io/runai-professional-services/charts"
     condition: mcp-server-runai.enabled
+  - name: redis
+    version: "~20.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
 

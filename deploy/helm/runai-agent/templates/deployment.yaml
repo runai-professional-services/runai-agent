@@ -157,7 +157,18 @@ spec:
             - name: KUBECONFIG
               value: "/root/.kube/config"
             {{- end }}
-            
+
+            {{- if .Values.redis.enabled }}
+            # Redis conversation memory
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.redis.auth.existingSecret }}{{ .Values.redis.auth.existingSecret }}{{ else }}{{ include "runai-agent.fullname" . }}-redis{{ end }}
+                  key: redis-password
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@{{ include "runai-agent.fullname" . }}-redis-master:6379"
+            {{- end }}
+
             {{- range .Values.extraEnv }}
             - name: {{ .name }}
               value: {{ .value | quote }}

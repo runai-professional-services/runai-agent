@@ -2,5 +2,8 @@ dependencies:
 - name: mcp-server-runai
   repository: oci://ghcr.io/runai-professional-services/charts
   version: 0.1.14
-digest: sha256:a4f047bf4673d7ed3f8d8c10f50137bf1f240d36bf1df0a3cca3aaf8fc383503
-generated: "2026-03-12T07:47:21.635208-07:00"
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 20.0.5
+digest: sha256:412dfc8c284b44bcf0c4c4565fde4a0d9e40bd2c140befdf0307888bc48bee19
+generated: "2026-03-12T13:38:51.288965-07:00"

@@ -4,6 +4,7 @@
 # - MCP_SERVER_URL: URL of the mcp-server-runai service (e.g., http://mcp-server-runai:8080)
 # - NVIDIA_API_KEY: NVIDIA API key for NIM models
 # - RUNAI_FAILURE_DB_PATH: Path to failure analysis database (optional, default: /tmp)
+# - REDIS_URL: Redis connection URL for conversation memory (e.g., redis://:password@host:6379)
 #
 general:
   use_uvloop: true
@@ -147,9 +148,10 @@ function_groups:
       transport: streamable-http
       url: ${MCP_SERVER_URL}/mcp
 
-workflow:
-  _type: tool_calling_agent
-  tool_names:
+  # Inner agent — wraps all tools; memory is added by auto_memory_agent below
+  runai_inner_agent:
+    _type: tool_calling_agent
+    tool_names:
     - runai_list_resources
     - runai_workspace  # Interactive workspace submission (Jupyter, VSCode, etc.)
     - runailabs_environment_info
@@ -265,3 +267,15 @@ workflow:
 
     Always provide complete, runnable code with proper error handling and security best practices.
 
+memory:
+  redis_memory:
+    _type: nat.plugins.redis/redis_memory
+    redis_url: "${REDIS_URL}"
+
+workflow:
+  _type: auto_memory_agent
+  inner_agent_name: runai_inner_agent
+  memory_name: redis_memory
+  llm_name: demo_llm
+  search_params:
+    limit: 10  # retrieve last 10 exchanges for context

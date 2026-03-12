@@ -2,6 +2,7 @@
  * RunAI Agent API Client
  */
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import * as os from 'os';
 
 export interface AgentResponse {
   output: string;
@@ -21,11 +22,13 @@ export class RunAIAgentClient {
 
   constructor(baseUrl: string, timeout: number = 60000) {
     this.baseUrl = baseUrl;
+    const userId = process.env.RUNAI_USER_ID || os.userInfo().username;
     this.client = axios.create({
       baseURL: baseUrl,
       timeout,
       headers: {
         'Content-Type': 'application/json',
+        'X-User-ID': userId,
       },
     });
   }

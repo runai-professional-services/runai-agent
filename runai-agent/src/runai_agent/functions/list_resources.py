@@ -273,9 +273,8 @@ async def runai_list_resources(config: RunaiListResourcesConfig, builder: Builde
             "s3",
             "nfs",
             "git",
+            "credentials",
         ):
-            args["projectName"] = project
-        if project and resource_type == "credentials":
             args["project_name"] = project
 
         try:

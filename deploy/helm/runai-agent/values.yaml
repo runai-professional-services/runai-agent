@@ -18,6 +18,8 @@ global:
 redis:
   enabled: true
   architecture: standalone
+  image:
+    tag: "8.6.0-debian-12-r0"  # pin to match chart 25.0.0; update alongside chart upgrades
   auth:
     enabled: true
     password: ""          # set via --set redis.auth.password=...

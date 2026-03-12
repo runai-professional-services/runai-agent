@@ -19,7 +19,8 @@ redis:
   enabled: true
   architecture: standalone
   image:
-    tag: "8.6.0-debian-12-r0"  # pin to match chart 25.0.0; update alongside chart upgrades
+    tag: "latest"
+    digest: "sha256:8bec2c27cd4edb02827f2d87d629ef3e2240d78a8643e6a988f59c1dc6d68450"  # bitnami only publishes versioned tags to their OCI registry; pin via digest instead
   auth:
     enabled: true
     password: ""          # set via --set redis.auth.password=...

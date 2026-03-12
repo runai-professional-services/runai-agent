@@ -96,13 +96,8 @@ def _format_departments(data: dict) -> str:
 
 
 def _format_workloads(data: dict, kind: str) -> str:
-    key_map = {
-        "trainings": "trainings",
-        "workspaces": "workspaces",
-        "inferences": "inferences",
-    }
-    key = key_map.get(kind, kind)
-    items = _unwrap(data, key)
+    # MCP returns {"workloads": [...]} for all workload types
+    items = _unwrap(data, "workloads") or _unwrap(data, kind)
     if not items:
         return f"No {kind} found."
     lines = [f"Found {len(items)} {kind}:"]
@@ -122,7 +117,7 @@ def _format_workloads(data: dict, kind: str) -> str:
 
 
 def _format_node_pools(data: dict) -> str:
-    pools = _unwrap(data, "nodePools")
+    pools = _unwrap(data, "nodepools")
     if not pools:
         return "No node pools found."
     lines = [f"Found {len(pools)} node pool(s):"]

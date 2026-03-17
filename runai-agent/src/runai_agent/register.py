@@ -20,6 +20,13 @@
 # (ValidationError → except → fall through → model retries with proper args).
 #
 # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit
+# Explicitly register agents — nat.agent.register crashes at prompt_optimizer
+# (which imports nat.plugins.eval, an optional package not installed), so agents
+# defined after that crash (tool_calling_agent, react_agent, etc.) never register.
+# We import each one directly to ensure they're registered regardless.
+import nat.agent.auto_memory_wrapper.register  # noqa: F401  (auto_memory_agent)
+import nat.agent.tool_calling_agent.register  # noqa: F401  (tool_calling_agent)
+
 from nat.utils import type_converter as _tc
 from pydantic import BaseModel as _BaseModel
 
@@ -46,7 +53,7 @@ _tc.TypeConverter._try_direct_conversion = _patched_try_direct
 #   - "jupyter" in image  → Jupyter defaults (start-notebook.sh + base_url arg)
 #   - "code-server" / "vscode" in image → VSCode defaults
 #   - tool_type already set to a known value → use matching preset
-from nat.plugins.mcp.client_base import MCPToolClient as _MCPToolClient
+from nat.plugins.mcp.client.client_base import MCPToolClient as _MCPToolClient
 
 _WORKSPACE_PRESETS = {
     "jupyter": {
@@ -113,6 +120,38 @@ async def _patched_acall(self, tool_args: dict) -> str:  # type: ignore[override
 
 
 _MCPToolClient.acall = _patched_acall
+
+# Patch RedisEditor.add_items to auto-populate the `memory` field from `conversation`
+# when it is empty.
+#
+# NAT Bug: auto_memory_wrapper/agent.py creates MemoryItem with conversation=[{...}] but
+# leaves memory="" (the default). RedisEditor.add_items only generates an embedding when
+# memory_item.memory is truthy — so nothing ever gets indexed and vector search always
+# returns zero results, breaking memory recall entirely.
+#
+# Fix: before storing, derive memory text from conversation content so embeddings are
+# created and semantic search works as intended.
+from nat.plugins.redis.redis_editor import RedisEditor as _RedisEditor
+from nat.memory.models import MemoryItem as _MemoryItem
+
+_orig_redis_add_items = _RedisEditor.add_items
+
+
+async def _patched_redis_add_items(self, items: list[_MemoryItem]) -> None:
+    patched = []
+    for item in items:
+        if not item.memory and item.conversation:
+            texts = [
+                f"{m.get('role', 'unknown')}: {m.get('content', '')}"
+                for m in item.conversation
+                if isinstance(m, dict)
+            ]
+            item = item.model_copy(update={"memory": " | ".join(texts)})
+        patched.append(item)
+    return await _orig_redis_add_items(self, patched)
+
+
+_RedisEditor.add_items = _patched_redis_add_items
 
 # Import all functions to register them with NAT
 from runai_agent.functions import (

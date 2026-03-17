@@ -97,9 +97,10 @@ mcp-server-runai:
   #       hosts:
   #         - mcp-runai.example.com
   #
-  # mcp:
-  #   allowedHosts:
-  #     - "mcp-runai.example.com"
+  mcp:
+    allowedHosts:
+      - "runai-agent-mcp-server-runai:8080"  # internal cluster access (always required)
+      # - "mcp-runai.example.com"            # add your ingress hostname if exposing externally
 
 # Container image configuration
 image:

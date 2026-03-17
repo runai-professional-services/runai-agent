@@ -12,6 +12,7 @@ dependencies = [
     "nvidia-nat>=1.4.1",
     "nvidia-nat-mcp>=1.4.1",
     "nvidia-nat-redis>=1.4.1",
+    "nvidia-nat-eval>=1.4.1",  # Required by nat.agent.register (prompt_optimizer); without it tool_calling_agent fails to load
     "runapy>=1.0.0",  # Used by proactive_monitor, job_analytics, kubectl_troubleshoot; remove after full MCP migration
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",

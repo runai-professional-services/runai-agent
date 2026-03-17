@@ -60,17 +60,14 @@ WORKDIR /app
 # Install uv for Python package management
 RUN pip install --no-cache-dir uv
 
-# Create virtual environment and install NAT from PyPI
-RUN uv venv .venv && \
-    . .venv/bin/activate && \
-    uv pip install "nvidia-nat[langchain]==1.3.1" && \
-    GIT_LFS_SKIP_SMUDGE=1 uv pip install "git+https://github.com/NVIDIA/NeMo-Agent-Toolkit.git@v1.3.1#subdirectory=examples/getting_started/simple_web_query"
+# Create virtual environment
+RUN uv venv .venv
 
-# Copy and install custom RunAI agent
+# Copy and install custom RunAI agent (pulls all dependencies from pyproject.toml)
 COPY runai-agent/ /app/runai-agent/
 RUN . .venv/bin/activate && \
     cd /app/runai-agent && \
-    uv pip install -e .
+    GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 
 # ============================================
 # Frontend Setup

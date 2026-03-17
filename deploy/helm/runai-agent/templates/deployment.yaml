@@ -165,8 +165,8 @@ spec:
                 secretKeyRef:
                   name: {{ if .Values.redis.auth.existingSecret }}{{ .Values.redis.auth.existingSecret }}{{ else }}{{ include "runai-agent.fullname" . }}-redis{{ end }}
                   key: redis-password
-            - name: REDIS_URL
-              value: "redis://:$(REDIS_PASSWORD)@{{ include "runai-agent.fullname" . }}-redis-master:6379"
+            - name: REDIS_HOST
+              value: "{{ include "runai-agent.fullname" . }}-redis-master"
             {{- end }}
 
             {{- range .Values.extraEnv }}

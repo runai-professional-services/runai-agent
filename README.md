@@ -25,6 +25,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - [🔬 Advanced Failure Analysis](#-advanced-failure-analysis)
 - [📊 Job Performance Analytics](#-job-performance-analytics)
 - [🗄️ Datasource Operations](#️-datasource-operations)
+- [🧠 Conversation Memory](#-conversation-memory)
 - [🏗️ Architecture](#️-architecture)
 - [🔧 Configuration](#-configuration)
 - [📚 Documentation](#-documentation)
@@ -52,6 +53,7 @@ An intelligent conversational agent built with NVIDIA's NeMo Agent Toolkit (NAT)
 - 🚀 **NIM LLM Benchmarking** - Run GPU benchmarks on H100, H200, A100 using NIM inference
 - 📚 **Documentation Search** - Ask questions about Run:AI features and get answers from official docs
 - 🧠 **Code Generation** - Generate Python job submission code from real GitHub examples
+- 💾 **Conversation Memory** - Per-user memory backed by Redis; the agent remembers context across sessions and recalls it automatically in future conversations
 - 🌙 **Dark/Light Theme** - Choose your preferred appearance
 
 ## 📋 Prerequisites
@@ -805,6 +807,65 @@ List Git datasources
 
 ---
 
+## 🧠 Conversation Memory
+
+The agent uses Redis-backed per-user conversation memory powered by NAT's `auto_memory_agent`. The agent automatically stores and retrieves relevant context across sessions — no explicit "remember this" command needed, though you can ask it to store specific facts.
+
+### How it works
+
+1. After each conversation turn, NAT indexes the exchange in Redis using a vector embedding.
+2. On subsequent turns, the agent performs a semantic search over that user's stored memory and injects relevant context into the prompt automatically.
+3. Memory is **scoped per user** — each user's history is completely isolated.
+
+### User identity
+
+User identity is resolved in this priority order:
+
+| Source | How it's set |
+|--------|-------------|
+| `X-User-ID` HTTP header | Sent automatically by `runai-cli` using `RUNAI_USER_ID` env var, falling back to the OS username |
+| Default | `"default_user"` — all web UI users share this identity unless a reverse proxy injects the header |
+
+> **Note:** If you deploy the agent behind an SSO proxy or ingress controller, configure it to forward a unique user identifier as the `X-User-ID` header to get proper per-user isolation in the web UI.
+
+### CLI usage
+
+```bash
+# Memory is automatic — just use the CLI normally
+runai-cli ask "My team's main project is project-alpha"
+runai-cli ask "Which project does my team use?"   # agent recalls project-alpha
+
+# Override user identity (useful for testing)
+RUNAI_USER_ID=alice runai-cli ask "Remember: I prefer H100 GPUs"
+RUNAI_USER_ID=alice runai-cli ask "What GPU do I prefer?"   # → H100
+```
+
+### Helm configuration
+
+Redis is deployed as a subchart and enabled by default. Key `values.yaml` options:
+
+```yaml
+redis:
+  enabled: true          # Set to false to disable memory entirely
+  auth:
+    enabled: true
+    password: ""         # Set via --set redis.auth.password=<pw>
+    existingSecret: ""   # Or reference a pre-existing Secret
+  master:
+    persistence:
+      enabled: false     # Memory is short-lived by design; enable for durable history
+```
+
+To disable memory and skip the Redis deployment entirely:
+
+```bash
+helm install runai-agent runai-agent/runai-agent \
+  --set redis.enabled=false \
+  ...
+```
+
+---
+
 ## 🏗️ Architecture
 
 ```
@@ -820,22 +881,24 @@ List Git datasources
 │       │                          │      NAT Agent            │   │
 │       │                          │       :8000               │   │
 │       └──→ /* ──→ ┌──────────┐  │  (ReAct + MCP client)    │   │
-│                    │ Next.js  │  └────────────┬─────────────┘   │
-│                    │  :3001   │               │ MCP              │
-│                    └──────────┘               │ streamable-http  │
-└───────────────────────────────────────────────┼──────────────────┘
-                                                │
-                ┌───────────────────────────────▼──────────────────┐
-                │              mcp-server-runai Pod                  │
-                │                    :8080                           │
-                │                                                    │
-                │  MCP Tools: list/create/delete projects,           │
-                │  submit/suspend/resume/delete workloads,           │
-                │  departments, node pools, users, access rules,     │
-                │  PVC/S3/NFS/Git asset listing                      │
-                └───────────────────────────────┬──────────────────┘
-                                                │
-                                        Run:AI Cluster API
+│                    │ Next.js  │  └──────┬──────────┬─────────┘   │
+│                    │  :3001   │         │ MCP       │ memory      │
+│                    └──────────┘         │           │ (Redis)     │
+└────────────────────────────────────────┼───────────┼─────────────┘
+                                         │           │
+                ┌────────────────────────▼──────┐  ┌─▼──────────────┐
+                │      mcp-server-runai Pod      │  │   Redis Pod    │
+                │            :8080               │  │    :6379       │
+                │                                │  │                │
+                │  MCP Tools: list/create/delete │  │  Per-user      │
+                │  projects, submit/suspend/     │  │  conversation  │
+                │  resume/delete workloads,      │  │  memory        │
+                │  departments, node pools,      │  │  (vector index)│
+                │  users, access rules,          │  └────────────────┘
+                │  PVC/S3/NFS/Git asset listing  │
+                └────────────────────────┬───────┘
+                                         │
+                                 Run:AI Cluster API
 ```
 
 **Components:**
@@ -845,6 +908,7 @@ List Git datasources
 - **Next.js UI** (port 3001): Modern web interface with SSE streaming, pre-built at image build time
 - **NAT Agent** (port 8000): FastAPI backend — ReAct agent with MCP client connecting to `mcp-server-runai`
 - **mcp-server-runai** (port 8080): Separate pod — exposes all Run:AI platform operations as MCP tools
+- **Redis** (port 6379): Separate pod — stores per-user conversation memory as vector embeddings for semantic recall
 - **Supervisord**: Process manager inside the agent container (Nginx + NAT + Next.js)
 
 **Agent init flow:** An initContainer in the agent pod polls `mcp-server-runai/ready` before the agent starts, ensuring the MCP server is authenticated and ready before NAT registers tools.

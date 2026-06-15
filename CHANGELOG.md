@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.51] - 2026-06-15
+
+### Changed
+- Add LICENSE.md file (637e157)
+- Revise LICENSE file for clarity and completeness (8beb999)
+- Revise LICENSE to include project details (3886a5f)
+
+
 ## [0.1.50] - 2026-03-12
 
 ### Changed
@@ -199,5 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.49]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.49
 
-[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.50...HEAD
 [0.1.50]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.50
+
+[Unreleased]: https://github.com/runai-professional-services/runai-agent/compare/v0.1.51...HEAD
+[0.1.51]: https://github.com/runai-professional-services/runai-agent/releases/tag/v0.1.51

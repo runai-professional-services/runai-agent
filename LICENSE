@@ -1,0 +1,9 @@
+MIT License
+
+Copyright (c) 2026 NVIDIA Corporation
+
+## License
+
+This project is licensed under the MIT License. 
+
+The repository is publicly available to support reusable tooling for NVIDIA Run:ai infrastructure automation, including agent-based cluster management, workload lifecycle operations, GPU resource visibility, troubleshooting, and related AI infrastructure workflows.
